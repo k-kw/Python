@@ -266,6 +266,107 @@ class simnet_decoder_allsize(nn.Module):
 
 
 #classfication_model
+
+#LeakyReLU
+class Conv_Bn_LeakyReLu_He_weight(nn.Module):
+  """
+  LeakyReLU and He initialization
+  Default of LeakyReLU's negative_slope is 0.01.
+  """
+  def __init__(self, input_channel, output_channel, kernel_size, negslo):
+    super().__init__()
+    self.CNN = nn.Sequential(nn.Conv2d(input_channel, output_channel, kernel_size),
+                             nn.BatchNorm2d(output_channel),
+                             nn.LeakyReLU(negative_slope = negslo),
+                             )
+    
+    #CNN層の重み初期化
+    nn.init.kaiming_uniform_(self.CNN[0].weight, nonlinearity = 'leaky_relu')
+
+    # #BN層は重み初期化出来ない？
+    #nn.init.kaiming_uniform_(self.CNN[1].weight, nonlinearity = 'leaky_relu')
+
+  def forward(self,x):
+    x = self.CNN(x)
+    return x
+
+class simnet_cnn_allsize_ver5_size_test(nn.Module):
+  """
+  This is a test model of linear-layer's input of simnet_cnn_allsize_ver5 .
+  """
+  def __init__(self, cnn_layer_num, input_channel, output_channel_list, kernel_size_list, classes, negslo):
+    super().__init__()
+    self.cnn_layer_num = cnn_layer_num
+    self.CNN1 = Conv_Bn_LeakyReLu_He_weight(input_channel, output_channel_list[0], kernel_size_list[0], negslo)
+    
+    self.CNNlist=[]
+    for i in range(1,self.cnn_layer_num):
+      self.CNNlist.append(Conv_Bn_LeakyReLu_He_weight(output_channel_list[i-1], output_channel_list[i], kernel_size_list[i], negslo))
+
+    self.CNNS = nn.Sequential(*self.CNNlist)
+    self.flat = nn.Flatten()
+
+  def forward(self,x):
+    x = self.CNN1(x)
+    x = self.CNNS(x)
+    x = self.flat(x)
+    return x
+
+class simnet_cnn_allsize_ver5(nn.Module):
+  """
+  This is classfication-model. Last layer of this model is log_softmax, so loss-function should be NLLLoss.
+  Average Pooling layer is not used in this model.
+  cnn_layer_num=len(outpuut_channel_list)=len(kernel_size_list)
+  He initialization
+  add Drop out layer
+  """
+  def __init__(self, cnn_layer_num, input_channel, in_height, in_width, output_channel_list, kernel_size_list, classes, drop, linear2_in, negslo):
+    super().__init__()
+    self.cnn_layer_num = cnn_layer_num
+
+    self.CNN1 = Conv_Bn_LeakyReLu_He_weight(input_channel, output_channel_list[0], kernel_size_list[0], negslo)
+    
+    self.CNNlist=[]
+    for i in range(1,self.cnn_layer_num):
+      self.CNNlist.append(Conv_Bn_LeakyReLu_He_weight(output_channel_list[i-1], output_channel_list[i], kernel_size_list[i], negslo))
+    self.CNNS = nn.Sequential(*self.CNNlist)
+
+    #torch.flattenと異なり,デフォルトでバッチを平滑化しない
+    self.flat = nn.Flatten()
+    
+    #テストモデルでlinearのinputsizeを自動的に求める
+    test_model = simnet_cnn_allsize_ver5_size_test(cnn_layer_num, input_channel, output_channel_list\
+                                                   , kernel_size_list, classes, negslo)
+    outsize = model_outputsize_test(test_model, [1, input_channel, in_height, in_width])
+    del test_model
+
+    #outsize=(1, size)なので[1]を取り出す
+    self.fc1 = nn.Linear(outsize[1], linear2_in)
+    self.fc2 = nn.Linear(linear2_in, classes)
+    self.relu = nn.LeakyReLU()
+
+    del outsize
+
+    #重みを初期化
+    nn.init.kaiming_uniform_(self.fc1.weight, mode = 'fan_in', nonlinearity='leaky_relu')
+    nn.init.kaiming_uniform_(self.fc2.weight, mode = 'fan_in', nonlinearity='leaky_relu')
+
+    self.drop = nn.Dropout(p = drop)
+
+
+  def forward(self,x):
+    x = self.CNN1(x)
+    x = self.CNNS(x)
+    x = self.flat(x)
+    x = self.drop(x)
+    x = self.fc1(x)
+    x = self.relu(x)
+    x = self.drop(x)
+    x = self.fc2(x)
+    return F.log_softmax(x, dim=1)
+
+
+
 #出力にlog_softmax使ってNllLOSSで計算した方が高精度っぽい
 #理由はbackward時にlog_softmaxの計算も含めて、パラメータ更新するから？
 
