@@ -56,29 +56,6 @@ def sim_label_read(data_path, size, num, label_true, byte):
       data_array = data_read(data_path,byte,num*size)
       data_array = data_array.reshape(num,size)
       return data_array
-    # with open(simdat_path,'rb') as f:
-    #     if (label_true==True):
-    #         for i in range(num):
-    #             tmp=f.read(4)
-    #             q=int.from_bytes(tmp,'little')
-    #             data_list.append(q)
-    #     else:
-    #         for i in range(num*size):
-    #             if (byte_num==1):
-    #                 tmp=f.read(1)
-    #             else:
-    #                 tmp=f.read(4)
-    #             q=int.from_bytes(tmp,'little')
-    #             data_list.append(q)
-
-    #     data_array=np.array(data_list)
-    #     if (label_true==True):
-    #         data_array=data_array.reshape(num,)
-    #     else:
-    #         data_array=data_array.reshape(num,size)
-
-    # return data_array
-
 
 def simwave_ver2(num,size,simpath,labelpath,byte,dis_width,dis_height,\
   fontsize,xlabel,ylabel,save_dir_path):
