@@ -86,19 +86,26 @@ def simwave_ver2(num,size,simpath,labelpath,byte,dis_width,dis_height,\
 
   dat = sim_label_read(simpath,size,num,False,byte)
   label = sim_label_read(labelpath,1,num,True,4)
+
+  plt.rcParams["figure.figsize"] = (dis_width,dis_height)
+  plt.rcParams["font.size"] = fontsize
+  plt.rcParams["figure.subplot.left"] = 0.15
+  
   for i in range(num):
-    
+    fig = plt.figure()
+
     plt.rcParams["figure.figsize"] = (dis_width,dis_height)
     plt.rcParams["font.size"] = fontsize
     plt.rcParams["figure.subplot.left"] = 0.15
     plt.plot(range(0,size), dat[i],linewidth=1)
     
+
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
     plt.title(label[i])
-    plt.show()
-    fig = plt.figure()
-    fig.savefig(save_dir_path+ '/' + str(i) +'.png')
+    fig.savefig(save_dir_path+ '/' + str(i) +'.jpg')
+
+    #plt.show()
 
 def simwave(num,size,simpath,labelpath,byte_num):
   import matplotlib.pyplot as plt
