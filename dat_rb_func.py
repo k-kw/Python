@@ -109,17 +109,6 @@ def array_to_grayjpeg(width,height,img_dat,name,save_dir):
 
 def bin_read(bin_path,byte,num,height,width):
   data_array = data_read(bin_path,byte,num*height*width)
-
-  # data_list=[]
-  # with open(bin_path,'rb') as f:
-  #   for i in range(num*height*width):
-  #     if (byte_num==1):
-  #       tmp=f.read(1)
-  #     else:
-  #       tmp=f.read(4)
-  #     q=int.from_bytes(tmp,'little')
-  #     data_list.append(q)
-  # data_array=np.array(data_list)
   data_array = data_array.reshape(num,height,width)
   return data_array
 
