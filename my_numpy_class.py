@@ -27,7 +27,7 @@ class My_numpy:
         self.sizex = sizex
 
         self.data = dataread(self.datapath, self.byte, num*sizex)
-        self.data = self.dataarray.reshape(num, sizex)
+        self.data = self.data.reshape(num, sizex)
 
 
     def binread(self, num, sizey, sizex):
@@ -36,7 +36,7 @@ class My_numpy:
         self.sizey = sizey
 
         self.data = dataread(self.datapath, self.byte, num*sizex*sizey)
-        self.data = self.dataarray.reshape(num, sizey, sizex)
+        self.data = self.data.reshape(num, sizey, sizex)
 
 
     def labelread(self, num):
