@@ -63,6 +63,18 @@ class My_numpy:
     def data_to_grayjpg(self, save_num, save_dir_path):
         for i in range(save_num):
             cv2.imwrite(save_dir_path + "/" + str(i) + ".jpg" ,self.data[i])
+    
+    def normalize(self):
+        self.max = np.max(self.data)
+        self.min = np.min(self.data)
+        self.data = (self.data - self.min) / (self.max - self.min)
+    
+    def normalize_DL(self, mean = None, std = None):
+        if mean == None:
+            mean = np.mean(self.data)
+        if std == None:
+            std = np.std(self.data)
+        self.data = (self.data - mean) / std
 
 
     #デストラクタ
