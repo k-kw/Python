@@ -59,6 +59,22 @@ class My_numpy:
             plt.title(labels[i])
             fig.savefig(save_dir_path+ '/' + str(i) +'.jpg')
 
+    def save_simwave(self, save_start_num, save_num, labels, dis_width, dis_height, fontsize, save_dir_path):
+        plt.rcParams["figure.figsize"] = (dis_width, dis_height)
+        plt.rcParams["font.size"] = fontsize
+        plt.rcParams["figure.subplot.left"] = 0.15
+
+        for i in range(save_start_num - 1, save_start_num - 1 + save_num):
+            fig = plt.figure()
+            plt.rcParams["figure.figsize"] = (dis_width, dis_height)
+            plt.rcParams["font.size"] = fontsize
+            plt.rcParams["figure.subplot.left"] = 0.15
+            plt.plot(range(0, self.sizex), self.data[i], linewidth=1)
+            plt.xlabel("position")
+            plt.ylabel("data")
+            plt.title(labels[i])
+            fig.savefig(save_dir_path+ '/' + str(i) +'.jpg')
+
     
     def data_to_grayjpg(self, save_num, save_dir_path):
         for i in range(save_num):
@@ -77,10 +93,23 @@ class My_numpy:
         self.data = (self.data - mean) / std
 
 
+    def writebin(self, data):
+        if (data.shape != 1):
+            data = data.reshape(-1)
+
+        with open(self.datapath,'wb') as f:
+            for dat in data:
+                dat = int(dat)
+                dat = dat.to_bytes(self.byte,'little')
+                f.write(dat)
+
+        
+        
     #デストラクタ
     def __del__(self):
         del self.data
         gc.collect()
+
 
 
 
