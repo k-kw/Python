@@ -35,6 +35,11 @@ class My_train:
         self.optimizer = optimizer
         self.train_loader = train_loader
         self.val_loader = val_loader
+        #学習曲線
+        self.tl = None
+        self.vl = None
+        self.ta = None
+        self.va = None
     
     def val(self, dataloader):
         self.model.eval()
@@ -68,7 +73,6 @@ class My_train:
             val_loss = val_loss/len(dataloader.dataset)
         
         return acc, val_loss, predict_list, label_list
-
 
 
     def train(self, epochs, L1 = False, alpha = None, L2 = False, lamda = None):
@@ -114,7 +118,61 @@ class My_train:
             caltime=(t2-t1)/60
             print(f'epochtime:{caltime}分')
             t1=time.time()
+        
+        self.tl = tl
+        self.vl = vl
+        self.ta = ta
+        self.va = va
 
         return tl, vl, ta, va
+    
+
+
+
+
+    def learning_curv(self, fig_w, fig_h, labelfontsize, scalefontsize):
+        rcparams_dic = {
+            'figure.figsize': (fig_w,fig_h),
+            'axes.labelsize': labelfontsize,
+            'xtick.labelsize': scalefontsize,
+            'ytick.labelsize': scalefontsize,
+            }
+        plt.rcParams.update(rcparams_dic)
+
+        #正解率の配列を持っている場合
+        if (self.ta != None) or (self.va != None):
+            plt.subplots_adjust(wspace=0.4, hspace=0.6)
+            plt.subplot(1,2,1)
+        
+        if self.tl != None:
+            plt.plot(range(1, 1 + len(self.tl)), self.tl, label="training")
+        plt.plot(range(1, 1 + len(self.vl)), self.vl, label="validation")
+        plt.xlabel('Epochs')
+        plt.ylabel('Loss')
+        plt.legend()
+
+        if (self.va != None) or (self.ta != None):
+            plt.subplot(1,2,2)
+            if self.ta != None:
+                plt.plot(range(1, 1 + len(self.ta)), self.ta, label="training")
+            plt.plot(range(1, 1 + len(self.va)), self.va, label="validation")
+            plt.xlabel('Epochs')
+            plt.ylabel('Acc')
+            plt.legend()
+
+        plt.show()
+    
+
+    def cfmat_save(self, matrix_save_path, vmax, figsy, figsx, fontsize):
+        import seaborn as sns
+        from sklearn.metrics import confusion_matrix
+        _, ax = plt.subplots(figsize = (figsy, figsx))
+
+        _, _, predictions, labels = self.val(self.val_loader)
+
+        cm = confusion_matrix(labels,predictions)
+        sns.heatmap(cm,square=True,cmap='Blues',annot=True,fmt='d',ax=ax,vmax=vmax,vmin=0,annot_kws={"size":fontsize})
+        
+        plt.savefig(matrix_save_path)
 
 
