@@ -403,9 +403,9 @@ def train_model_ver3(dataloader_train, dataloader_val, model, lossfunc, optimize
 
         #正則化(weight decay)
         if L2:
-          L2norm(model, lamda, loss)
+          loss = L2norm(model, lamda, loss)
         elif L1:
-          L1norm(model, alpha, loss)
+          loss = L1norm(model, alpha, loss)
 
 
         loss.backward()
