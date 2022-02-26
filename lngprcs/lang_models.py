@@ -4,10 +4,12 @@ import torch.nn.functional as F
 
 #lstmモデル
 class MyLSTM(nn.Module):
-  def __init__(self, vocsize, posn, hdim):
+  def __init__(self, vocsize, posn, hdim, lstm_num_layers):
     super(MyLSTM, self).__init__()
     self.embd = nn.Embedding(vocsize, hdim, padding_idx = 0)
-    self.lstm = nn.LSTM(hdim, hdim, batch_first = True)
+    self.lstm = nn.LSTM(hdim, hdim, batch_first = True, num_layers = lstm_num_layers)
+    
+    #lstmのnum_layersをいくつにしても出力サイズはそのままhdim
     self.ln = nn.Linear(hdim, posn)
   def forward(self, x):
     x = self.embd(x)
@@ -16,11 +18,13 @@ class MyLSTM(nn.Module):
     return x
 
 #lstm双方向モデル
-class MyLSTM_dibi(nn.Module):
-  def __init__(self, vocsize, posn, hdim):
-    super(MyLSTM_dibi, self).__init__()
+class MyLSTM_bidi(nn.Module):
+  def __init__(self, vocsize, posn, hdim, lstm_num_layers):
+    super(MyLSTM_bidi, self).__init__()
     self.embd = nn.Embedding(vocsize, hdim, padding_idx = 0)
-    self.lstm = nn.LSTM(hdim, hdim, batch_first = True, num_layers = 2, bidirectional = True)
+    self.lstm = nn.LSTM(hdim, hdim, batch_first = True, num_layers = lstm_num_layers, bidirectional = True)
+
+    #bidirectional(双方向)にしたため、lstmの出力がhdim*2になる。よってlnの入力も２倍
     self.ln = nn.Linear(hdim * 2, posn)
   def forward(self, x):
     x = self.embd(x)
