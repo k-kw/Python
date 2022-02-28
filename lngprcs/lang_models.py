@@ -36,12 +36,12 @@ class MyLSTM_bidi(nn.Module):
 
 #nmtモデル
 class MyNMT(nn.Module):
-  def __init__(self, jv, ev, k):
+  def __init__(self, jv, ev, k, jlay_num, elay_num):
     super(MyNMT, self).__init__()
     self.jemb = nn.Embedding(jv, k)
     self.eemb = nn.Embedding(ev, k)
-    self.lstm1 = nn.LSTM(k, k, num_layers = 2)
-    self.lstm2 = nn.LSTM(k, k, num_layers = 2)
+    self.lstm1 = nn.LSTM(k, k, num_layers = jlay_num, batch_first = True)
+    self.lstm2 = nn.LSTM(k, k, num_layers = elay_num, batch_first = True)
     self.w = nn.Linear(k, ev)
   def forward(self, jline, eline):
     x = self.jemb(jline)
@@ -53,12 +53,12 @@ class MyNMT(nn.Module):
 
 #attention_nmtモデル
 class MyAttNMT(nn.Module):
-  def __init__(self, jv, ev, k):
+  def __init__(self, jv, ev, k, jlay_num, elay_num):
     super(MyAttNMT, self).__init__()
     self.jemb = nn.Embedding(jv, k)
     self.eemb = nn.Embedding(ev, k)
-    self.lstm1 = nn.LSTM(k, k, num_layers = 2, batch_first = True)
-    self.lstm2 = nn.LSTM(k, k, num_layers = 2, batch_first = True)
+    self.lstm1 = nn.LSTM(k, k, num_layers = jlay_num, batch_first = True)
+    self.lstm2 = nn.LSTM(k, k, num_layers = elay_num, batch_first = True)
     self.Wc = nn.Linear(2*k, k)
     self.W = nn.Linear(k, ev)
   def forward(self, jline, eline):

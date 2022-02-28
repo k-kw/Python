@@ -47,16 +47,13 @@ def batch_pad_nmt(xs, ys, label_pad_value, device):
 
 #nmtモデルの学習関数
 def train_nmt_model(model, epochs, optimizer, lossfunc, device, dl):
-  """
-  tl is arbitrary.
-  """
+  
   t1 = time.time()
   loss_list = []
   
   for epoch in range(epochs):
     model.train()
     loss_print = 0
-    #correct = 0
     data_num = 0
 
     for xs, ys in dl:
