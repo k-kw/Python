@@ -45,6 +45,83 @@ def batch_pad_nmt(xs, ys, label_pad_value, device):
   gans = pad_sequence(ys2, batch_first = True, padding_value = label_pad_value).to(device)
   return xs1,ys1,gans
 
+#nmtモデルの評価関数
+def val_nmt_model(model, lossfunc, device, dataloader):
+    model.eval()
+    data_num = 0
+    loss_print = 0
+    
+    with torch.no_grad():
+        for xs, ys in dataloader:
+            #全単語数加算
+            for i in range(len(xs)):
+                data_num += len(xs[i])
+
+            #バッチをパディング
+            jinput, einput, gans = batch_pad_nmt(xs, ys, -1, device)
+
+            output = model(jinput, einput)
+            
+            #エポック毎の損失を加算
+            loss = lossfunc(output[0], gans[0])
+            for k in range(1,len(gans)):
+                loss += lossfunc(output[k], gans[k])
+            loss_print += loss.item()
+    
+    return loss_print/data_num
+            
+
+#nmtモデルの学習関数
+def train_nmt_model_ver2(model, epochs, optimizer, lossfunc, device, dl, vl = None):
+  
+    t1 = time.time()
+    loss_list = []
+    val_loss_list = []
+    for epoch in range(epochs):
+        model.train()
+        loss_print = 0
+        data_num = 0
+
+        for xs, ys in dl:
+            #全単語数加算
+            for i in range(len(xs)):
+                data_num += len(xs[i])
+
+            #バッチをパディング
+            jinput, einput, gans = batch_pad_nmt(xs, ys, -1, device)
+
+            output = model(jinput, einput)
+
+            #エポック毎の損失を加算
+            loss = lossfunc(output[0], gans[0])
+            for k in range(1,len(gans)):
+                loss += lossfunc(output[k], gans[k])
+            loss_print += loss.item()
+
+            #更新
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+    
+        loss_list.append(loss_print / data_num)
+        print('---------------------------------')
+        print(f'エポック{epoch+1} ,train_loss: {(loss_print / data_num):.4f}')
+        
+        #評価用データローダがあるなら評価
+        if vl != None:
+            loss_val = val_nmt_model(model, lossfunc, device, vl)
+            val_loss_list.append(loss_val)
+            print(f"val_loss: {(loss_val):.4f}")
+
+        
+        t2=time.time()
+        caltime=(t2-t1)/60
+        print(f'time:{caltime}分')
+        t1=time.time()
+
+    return loss_list, val_loss_list
+
+
 #nmtモデルの学習関数
 def train_nmt_model(model, epochs, optimizer, lossfunc, device, dl):
   
@@ -142,7 +219,6 @@ def train_lstm_model_ver2(model, epochs, optimizer, lossfunc, device, dl, tl = N
       xsl, ysl = batch_pad(xs, ys, -1, device)
 
       output = model(xsl)
-      # ysl = ysl.type(torch.LongTensor).to(device)
 
       #損失
       loss = lossfunc(output[0], ysl[0])
@@ -265,7 +341,7 @@ def val_lstm_model(model, dataloader, lossfunc, device):
       ans = torch.argmax(output, dim = 2)
       correct += torch.sum(ans == ysl).item()
     
-    print(f'val_loss:{loss_print/data_num}, val_correct_rate:{correct/data_num}')
+    #print(f'val_loss:{loss_print/data_num}, val_correct_rate:{correct/data_num}')
 
   return loss_print/data_num, correct/data_num
 
