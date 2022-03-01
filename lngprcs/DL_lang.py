@@ -26,6 +26,76 @@ def my_collate_fn(batch):
 
 
 #NMT
+#翻訳結果表示関数
+def dsp_trs_rslt(dsp_num, pre_ids, crr_ids, rslt_ids, lng1_2w, lng2_2w):
+    for i in range(dsp_num):
+        #翻訳前表示
+        for pid in pre_ids[i][1:-1]:
+            print(lng1_2w[pid], " ", end = ' ')
+
+        print("\n")
+
+        #翻訳正答表示
+        for cid in crr_ids[i][1:-1]:
+            print(lng2_2w[cid], " ", end = ' ')
+
+        print("\n")
+
+        #翻訳結果表示
+        for rid in rslt_ids[i][:-1]:
+            print(lng2_2w[rid], " ", end = ' ')
+
+        print("\n")
+
+#翻訳テスト関数、バッチ処理でない
+def nmt_trslt_test(model, lng1_data, lng2_id, device, maxlen):
+    """
+    this function translate language1 to language2.
+    lng2_dic convert word of language2 into id.
+    """
+    trslts = []
+    sid = lng2_id['<s>']
+    eid = lng2_id['</s>']
+    model.eval()
+    
+    with torch.no_grad():
+        for i in range(len(lng1_data)):
+            lng1_input = torch.LongTensor([ lng1_data[i][1:] ]).to(device)
+            #エンコーダに入力してhnとcn,oxを得る
+            model.infer_encode(lng1_input)
+            #widに文頭ID
+            wid = sid
+            sl = 0
+            
+            sntnc_trs = []
+            
+            while True:
+                wids = torch.LongTensor([[wid]]).to(device)
+                
+                #デコーダに入力して、最終的な出力を得る
+                oy = model.infer_decode(wids)
+                
+                #AttがあってもなくてもこれでOK
+                wid = torch.argmax(oy[0]).item()
+                
+                #翻訳出力のIDリストに連結
+                sntnc_trs.append(wid)
+                
+                #文末なら出る
+                if wid == eid:
+                    break
+                
+                sl += 1
+                
+                #文が最大長を超えるなら出る
+                if sl == maxlen:
+                    break
+            
+            trslts.append(sntnc_trs)
+                
+    return trslts
+
+
 #バッチパディング関数
 def batch_pad_nmt(xs, ys, label_pad_value, device):
   xs1, ys1, ys2 = [], [], []
