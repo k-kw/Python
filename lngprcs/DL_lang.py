@@ -27,25 +27,44 @@ def my_collate_fn(batch):
 
 #NMT
 #翻訳結果表示関数
-def dsp_trs_rslt(dsp_num, pre_ids, crr_ids, rslt_ids, lng1_2w, lng2_2w):
+def disp_result(dsp_num, prew, crrw, rsltw):
     for i in range(dsp_num):
-        #翻訳前表示
-        for pid in pre_ids[i][1:-1]:
-            print(lng1_2w[pid], " ", end = ' ')
-
+        print(prew[i])
+        print("\n")
+        print(crrw[i])
+        print("\n")
+        print(rsltw[i])
         print("\n")
 
-        #翻訳正答表示
+#ID列から単語列に変換
+def ids2w_s(crr_ids, lng2w):
+    """
+    exclude <s> and </s>, and convert id-list to word-list
+    """
+    
+    crrw = []
+    for i in range(len(crr_ids)):
+        crrwstc = []
+        
         for cid in crr_ids[i][1:-1]:
-            print(lng2_2w[cid], " ", end = ' ')
+            crrwstc.append(lng2w[cid])
+        
+ 
+        crrw.append(crrwstc)
+    
+    return crrw
 
-        print("\n")
-
-        #翻訳結果表示
-        for rid in rslt_ids[i][:-1]:
-            print(lng2_2w[rid], " ", end = ' ')
-
-        print("\n")
+def ids2w(rslt_ids, lng2w):
+    rsltw = []
+    for i in range(len(rslt_ids)):
+        rsltwstc = []
+        
+        for rid in rslt_ids[i]:
+            rsltwstc.append(lng2w[rid])
+        
+        rsltw.append(rsltwstc)
+    
+    return rsltw
 
 #翻訳テスト関数、バッチ処理でない
 def nmt_trslt_test(model, lng1_data, lng2_id, device, maxlen):
@@ -78,12 +97,12 @@ def nmt_trslt_test(model, lng1_data, lng2_id, device, maxlen):
                 #AttがあってもなくてもこれでOK
                 wid = torch.argmax(oy[0]).item()
                 
-                #翻訳出力のIDリストに連結
-                sntnc_trs.append(wid)
-                
                 #文末なら出る
                 if wid == eid:
                     break
+
+                #翻訳出力のIDリストに連結
+                sntnc_trs.append(wid)
                 
                 sl += 1
                 
