@@ -94,6 +94,7 @@ class My_numpy:
 
 
     def writebin(self, data):
+        data = data.reshape(-1)
 
         with open(self.datapath,'wb') as f:
             for dat in data:
