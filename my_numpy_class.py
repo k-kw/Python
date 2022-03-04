@@ -22,6 +22,9 @@ class My_numpy:
         self.byte = byte
         self.datapath = datapath
     
+    def ndarraytodata(self, input_ndarray):
+        self.data = input_ndarray
+    
     def simread(self, num, sizex):
         self.num = num
         self.sizex = sizex
@@ -94,6 +97,9 @@ class My_numpy:
 
 
     def writebin(self, data):
+        """
+        selfとは別の配列を、__init__で用意したパスに書き込む
+        """
         data = data.reshape(-1)
 
         with open(self.datapath,'wb') as f:
