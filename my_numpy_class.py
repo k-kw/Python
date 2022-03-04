@@ -43,7 +43,7 @@ class My_numpy:
         self.data = dataread(self.datapath, 4, num)
     
     
-    def save_simwave(self, save_num, labels, dis_width, dis_height, fontsize, save_dir_path):
+    def save_simwave_old(self, save_num, labels, dis_width, dis_height, fontsize, save_dir_path):
         plt.rcParams["figure.figsize"] = (dis_width, dis_height)
         plt.rcParams["font.size"] = fontsize
         plt.rcParams["figure.subplot.left"] = 0.15
