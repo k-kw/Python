@@ -25,6 +25,113 @@ def my_collate_fn(batch):
 
 
 
+
+
+#BERT doccls
+
+
+#バッチパディング
+def batch_pad_bert_msk(xs, device):
+    xsl, xmsk = [], []
+    for i in range(len(xs)):
+        ids = xs[i]
+        xsl.append(torch.LongTensor(ids))
+        xmsk.append(torch.LongTensor([1] * len(ids)))
+    xsl = pad_sequence(xsl, batch_first = True).to(device)
+    xmsk = pad_sequence(xmsk, batch_first = True).to(device)
+    return xsl, xmsk
+
+#Bert doccls バッチ評価関数
+def val_bert_doccls_model(model, lossfunc, device, dataloader):
+    model.eval()
+    total = 0
+    loss_print = 0
+    correct = 0
+    
+    with torch.no_grad():
+        for xs, ys in dataloader:
+            total += len(ys)
+            
+            #バッチパディング
+            xsl, xmsk = batch_pad_bert_msk(xs, device)        
+            #順伝搬
+            output = model(xsl, xmsk)
+    
+            #損失
+            ys = torch.LongTensor(ys).to(device)
+            loss = lossfunc(output, ys)
+            loss_print += loss.item()
+            
+            #正答率
+            ans = torch.argmax(output, dim = 1)
+            correct += torch.sum(ans == ys).item()
+            
+    return loss_print/total, correct/total
+
+#Bert doccls バッチ学習関数
+def train_bert_doccls_model(model, epochs, optimizer, lossfunc, device, dl, vl = None):
+    
+    t1 = time.time()
+    loss_list = []
+    acc_list = []
+    val_loss_list = []
+    val_acc_list = []
+    
+    for epoch in range(epochs):
+        model.train()
+        loss_print = 0
+        total = 0
+        correct = 0
+        
+        for xs, ys in dl:
+            total += len(ys)
+            
+            #バッチパディング
+            xsl, xmsk = batch_pad_bert_msk(xs, device)        
+            #順伝搬
+            output = model(xsl, xmsk)
+    
+            #損失
+            ys = torch.LongTensor(ys).to(device)
+            loss = lossfunc(output, ys)
+            loss_print += loss.item()
+            
+            #正答率
+            ans = torch.argmax(output, dim = 1)
+            correct += torch.sum(ans == ys).item()
+            
+            #更新
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+            
+        loss_list.append(loss_print/total)
+        acc_list.append(correct/total)
+        print('---------------------------------')
+        print(f'エポック{epoch+1} ,train_loss: {loss_print/total} ,train_acc: {correct/total}')
+        
+        #評価用データローダがあるなら評価
+        if vl != None:
+            loss_val, acc_val = val_bert_doccls_model(model, lossfunc, device, vl)
+            val_loss_list.append(loss_val)
+            val_acc_list.append(acc_val)
+            print(f"val_loss: {(loss_val):.4f}, val_acc: {(acc_val):.4f}")
+        
+        
+        
+        t2=time.time()
+        caltime=(t2-t1)/60
+        print(f'time:{caltime}分')
+        t1=time.time()
+        
+    return loss_list, val_loss_list, acc_list, val_acc_list
+
+
+
+
+
+
+
 #NMT
 #翻訳結果表示関数
 def disp_result(dsp_num, prew, crrw, rsltw):

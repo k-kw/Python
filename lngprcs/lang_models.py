@@ -128,3 +128,32 @@ class MyAttNMT(nn.Module):
         oy2 = self.Wc(oy1)
         oy3 = self.W(oy2)
         return oy3
+
+
+
+#BERT Doccls
+
+class MyDocCls(nn.Module):
+    def __init__(self, bert):
+        super(MyDocCls, self).__init__()
+        self.bert = bert
+        self.cls = nn.Linear(768, 9)
+    def forward(self, x):
+        bout = self.bert(x)
+        bs = len(bout[0])
+        h0 = [ bout[0][i][0] for i in range(bs) ]
+        h0 = torch.stack(h0, dim = 0)
+        return self.cls(h0)
+
+#バッチ用、マスク付き
+class MyDocCls_attmsk(nn.Module):
+    def __init__(self, bert):
+        super(MyDocCls_attmsk, self).__init__()
+        self.bert = bert
+        self.cls = nn.Linear(768, 9)
+    def forward(self, x1, x2):
+        bout = self.bert(input_ids = x1, attention_mask = x2)
+        bs = len(bout[0])
+        h0 = [ bout[0][i][0] for i in range(bs) ]
+        h0 = torch.stack(h0, dim = 0)
+        return self.cls(h0)
