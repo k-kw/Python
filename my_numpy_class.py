@@ -57,8 +57,8 @@ class My_numpy:
             plt.rcParams["font.size"] = fontsize
             plt.rcParams["figure.subplot.left"] = 0.15
             plt.plot(range(0, self.sizex), self.data[i], linewidth=1)
-            plt.xlabel("position")
-            plt.ylabel("data")
+            plt.xlabel("row-position")
+            plt.ylabel("pixel value")
             plt.title(labels[i])
             fig.savefig(save_dir_path+ '/' + str(i) +'.jpg')
 
@@ -73,8 +73,8 @@ class My_numpy:
             plt.rcParams["font.size"] = fontsize
             plt.rcParams["figure.subplot.left"] = 0.15
             plt.plot(range(0, self.sizex), self.data[i], linewidth=1)
-            plt.xlabel("position")
-            plt.ylabel("data")
+            plt.xlabel("row-position")
+            plt.ylabel("pixel value")
             plt.title(labels[i])
             fig.savefig(save_dir_path+ '/' + str(i) +'.jpg')
 
