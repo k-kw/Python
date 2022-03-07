@@ -50,12 +50,15 @@ class My_numpy:
         plt.rcParams["figure.figsize"] = (dis_width, dis_height)
         plt.rcParams["font.size"] = fontsize
         plt.rcParams["figure.subplot.left"] = 0.15
+        plt.rcParams["figure.subplot.bottom"] = 0.15
 
         for i in range(save_num):
             fig = plt.figure()
             plt.rcParams["figure.figsize"] = (dis_width, dis_height)
             plt.rcParams["font.size"] = fontsize
             plt.rcParams["figure.subplot.left"] = 0.15
+            plt.rcParams["figure.subplot.bottom"] = 0.15
+
             plt.plot(range(0, self.sizex), self.data[i], linewidth=1)
             plt.xlabel("row-position")
             plt.ylabel("pixel value")
@@ -66,12 +69,15 @@ class My_numpy:
         plt.rcParams["figure.figsize"] = (dis_width, dis_height)
         plt.rcParams["font.size"] = fontsize
         plt.rcParams["figure.subplot.left"] = 0.15
+        plt.rcParams["figure.subplot.bottom"] = 0.15
 
         for i in range(save_start_num - 1, save_start_num - 1 + save_num):
             fig = plt.figure()
             plt.rcParams["figure.figsize"] = (dis_width, dis_height)
             plt.rcParams["font.size"] = fontsize
             plt.rcParams["figure.subplot.left"] = 0.15
+            plt.rcParams["figure.subplot.bottom"] = 0.15
+
             plt.plot(range(0, self.sizex), self.data[i], linewidth=1)
             plt.xlabel("row-position")
             plt.ylabel("pixel value")
