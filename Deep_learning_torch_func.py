@@ -529,8 +529,9 @@ def train_decode_model_ver2(dataloader_train, dataloader_val, model, lossfunc, o
 
 #convert tensor into numpy
 def tensor_to_numpy(input_tensor):
-  import numpy as np
   output_numpy = input_tensor.to('cpu').detach().numpy().copy()
+  output_numpy = np.round(output_numpy)
+  output_numpy = np.clip(output_numpy, a_min = 0, a_max = 255)
   output_numpy = output_numpy.astype(np.uint8)
   return output_numpy
 
