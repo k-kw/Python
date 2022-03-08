@@ -419,10 +419,10 @@ def train_model_ver3(dataloader_train, dataloader_val, model, lossfunc, optimize
     val_acc_list.append(val_val[0])
 
     print(f'エポック{epoch+1}------------------------------')
-    print(f'val_acc{val_val[0]} ,train_acc{val_train[0]}')
+    print(f'val_acc{val_val[0]:.4f} ,train_acc{val_train[0]:.4f}')
     t2=time.time()
     caltime=(t2-t1)/60
-    print(f'epochtime:{caltime}分')
+    print(f'epochtime:{caltime:.4f}分')
     t1=time.time()
 
   return train_loss_list, val_loss_list, train_acc_list, val_acc_list
