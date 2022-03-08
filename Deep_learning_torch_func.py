@@ -536,7 +536,7 @@ def tensor_to_numpy(input_tensor):
   return output_numpy
 
 #test a decode model and check a output-image
-def test_decode_model_and_check_img_ver3(dataloader, img_width, img_height, model, device, figwidth, figheighgt, from_num, to_num, label_array = None):
+def test_decode_model_and_check_img_ver3(dataloader, img_width, img_height, model, device, figwidth, figheighgt, from_num, to_num, save_dir_path, label_array = None):
   """
   In addition to ver2, you can decide number of print-image.
   And calculate PSNR, display label_number.
@@ -566,18 +566,21 @@ def test_decode_model_and_check_img_ver3(dataloader, img_width, img_height, mode
         psnrs.append(psnr)
 
         if from_num <= img_num and img_num <= to_num:
-          plt.rcParams["figure.figsize"] = (figwidth, figheighgt)
-          if label_array is None:
-            plt.title('title')
-          else :
-            plt.title(label_array[img_num - 1])
-          plt.subplot(1,2,1)
-          plt.imshow(output_img_array)
-          plt.gray()
-          plt.subplot(1,2,2)
-          plt.imshow(origin_img_array)
-          plt.gray()
-          plt.show()
+            plt.rcParams["figure.figsize"] = (figwidth, figheighgt)
+            fig = plt.figure()
+
+            if label_array is None:
+                plt.title('title')
+            else :
+                plt.title(label_array[img_num - 1])
+            plt.subplot(1,2,1)
+            plt.imshow(output_img_array)
+            plt.gray()
+            plt.subplot(1,2,2)
+            plt.imshow(origin_img_array)
+            plt.gray()
+            plt.show()
+            fig.savefig(save_dir_path+ '/' + str(i) +'.jpg')
 
         img_num += 1
   return psnrs
