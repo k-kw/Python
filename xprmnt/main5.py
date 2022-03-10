@@ -93,7 +93,7 @@ def frame_line_wb(frame, write_row, f, byte):
         f.write(data)
 
 
-def data_int_wb(data, num, byte):
+def data_int_wb(data, num, f, byte):
     """
     byte: int 1 or 4
     """
@@ -155,15 +155,21 @@ if cap.isOpened():
             #frame.shape == h,w,3
             if ret == False:
                 print(f'{i + 1}枚目 : 取得失敗')
-                #miss_dataをmiss_size回書き込み
-                data_int_wb(miss_data, getwidth, byte)
-                
+                # #miss_dataをmiss_size回書き込み
+                # data_int_wb(miss_data, getwidth, f, byte)
+
+                #miss_dataをget_with*writerow_width回書き込み
+                data_int_wb(miss_data, getwidth * writerow_width, f, byte)
+
             else:
                 # #一行書き込み
                 # frame_line_wb(frame, write_row, f, byte)
                 
                 #複数行書き込み
                 frame_multiline_wb(frame, midrow, writerow_width, f, byte)
+
+                # #複数行平均して書き込み
+                # frame_multi_mean_wb(frame, midrow, writerow_width, f, byte)
 
 
         cv2.waitKey(int(sleeptime / 2))
