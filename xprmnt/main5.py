@@ -1,9 +1,8 @@
-#現在使っているコード
-
 import cv2
 import glob
 import re
 import os
+from cv2 import COLOR_BGR2GRAY
 import numpy as np
 
 
@@ -44,47 +43,52 @@ def frame_multiline_wb(frame, midrow, writerow_width, f, byte):
     """
     byte: int 1 or 4
     """
+    #グレースケール化
+    frame = cv2.cvtColor(frame, COLOR_BGR2GRAY)
+
     startrow_num = midrow - (writerow_width/2)
     write_rows = frame[[range(startrow_num, startrow_num + writerow_width)], :]
 
     
     for writedata in write_rows:
         for data in writedata:
-            tmp = np.mean(data)
-            tmp = int(tmp)
-            tmp = tmp.to_bytes(byte, 'little')
+            data = int(data)
+            data = data.to_bytes(byte, 'little')
 
-            f.write(tmp)
+            f.write(data)
 
 
 #真ん中複数列の平均を取得
-def frame_multi_mean_wb(frame, midrow, meanrow_width, f, byte):
+def frame_multi_mean_wb(frame, midrow, writerow_width, f, byte):
+    #グレースケール化
+    frame = cv2.cvtColor(frame, COLOR_BGR2GRAY)
+
+    #書き込む行を取り出す
     startrow_num = midrow - (writerow_width/2)
     write_rows = frame[[range(startrow_num, startrow_num + writerow_width)], :]
 
-    #RGB平均
-    meandata = np.mean(write_rows, axis = 2)
-    #列平均
-    meandata = np.mean(meandata, axis = 0)
     
-    for data in meandata:
-        tmp = np.mean(data)
-        tmp = int(tmp)
-        tmp = tmp.to_bytes(byte, 'little')
+    #列平均
+    write_rows = np.mean(write_rows, axis = 0)
+    
+    for data in write_rows:
+        data = int(data)
+        data = data.to_bytes(byte, 'little')
 
-        f.write(tmp)
+        f.write(data)
 
 
 def frame_line_wb(frame, write_row, f, byte):
     """
     byte: int 1 or 4
     """
+    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    
     for data in frame[write_row]:
-        tmp = np.mean(data)
-        tmp = int(tmp)
-        tmp = tmp.to_bytes(byte, 'little')
+        data = int(data)
+        data = data.to_bytes(byte, 'little')
 
-        f.write(tmp)
+        f.write(data)
 
 
 def data_int_wb(data, num, byte):
