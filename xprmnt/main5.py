@@ -1,3 +1,5 @@
+#複数列を取得する
+
 import cv2
 import glob
 import re
@@ -157,9 +159,12 @@ if cap.isOpened():
                 data_int_wb(miss_data, getwidth, byte)
                 
             else:
-                #一行書き込み
-                frame_line_wb(frame, write_row, f, byte)
+                # #一行書き込み
+                # frame_line_wb(frame, write_row, f, byte)
                 
+                #複数行書き込み
+                frame_multiline_wb(frame, midrow, writerow_width, f, byte)
+
 
         cv2.waitKey(int(sleeptime / 2))
         

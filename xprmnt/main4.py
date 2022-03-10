@@ -65,7 +65,7 @@ def frame_line_wb(frame, write_row, f, byte):
         f.write(tmp)
 
 
-def data_int_wb(data, num, byte):
+def data_int_wb(data, num, f, byte):
     """
     byte: int 1 or 4
     """
@@ -128,7 +128,7 @@ if cap.isOpened():
             if ret == False:
                 print(f'{i + 1}枚目 : 取得失敗')
                 #miss_dataをmiss_size回書き込み
-                data_int_wb(miss_data, getwidth, byte)
+                data_int_wb(miss_data, getwidth, f, byte)
                 
             else:
                 #一行書き込み
