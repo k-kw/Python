@@ -266,6 +266,94 @@ class simnet_decoder_allsize(nn.Module):
 
 
 #classfication_model
+#プーリング
+class Conv_Bn_ReLU_Pool(nn.Module):
+    def __init__(self, inc, outc, ksize, pool):
+        super().__init__()
+        self.CNN = nn.Sequential(
+            nn.Conv2d(inc, outc, ksize),
+            nn.BatchNorm2d(outc),
+            nn.ReLU(),
+            nn.MaxPool2d((pool, pool))
+            )
+        
+    def forward(self, x):
+        x = self.CNN(x)
+        return x
+
+class simnet_cnn_allsize_ver6_size_test(nn.Module):
+  """
+  This is a test model of linear-layer's input of simnet_cnn_allsize_ver6 .
+  """
+  def __init__(self, cnn_layer_num, inc, output_channel_list, ksize_list, pool_list):
+    super().__init__()
+    self.cnn_layer_num = cnn_layer_num
+    self.CNN1 = Conv_Bn_ReLU_Pool(inc, output_channel_list[0],ksize_list[0], pool_list[0])
+    
+    self.CNNlist=[]
+    for i in range(1, self.cnn_layer_num):
+      self.CNNlist.append(Conv_Bn_ReLU_Pool(output_channel_list[i-1], output_channel_list[i] ,ksize_list[i], pool_list[i]))
+
+    self.CNNS = nn.Sequential(*self.CNNlist)
+    self.flat = nn.Flatten()
+
+  def forward(self,x):
+    x = self.CNN1(x)
+    x = self.CNNS(x)
+    x = self.flat(x)
+    return x
+
+class simnet_cnn_allsize_ver6(nn.Module):
+  """
+  This is classfication-model. Last layer of this model is log_softmax, so loss-function should be NLLLoss.
+  Average Pooling layer is not used in this model.
+  cnn_layer_num=len(outpuut_channel_list)=len(kernel_size_list)
+  add Drop out layer
+  Pooling
+  """
+  def __init__(self, cnn_layer_num, inc, inh, inw, outc_list, ksize_list, pool_list, classes, drop, linear2_in):
+    super().__init__()
+    self.cnn_layer_num = cnn_layer_num
+
+    self.CNN1 = Conv_Bn_ReLU_Pool(inc, outc_list[0], ksize_list[0], pool_list[0])
+    
+    self.CNNlist=[]
+    for i in range(1, self.cnn_layer_num):
+      self.CNNlist.append(Conv_Bn_ReLU_Pool(outc_list[i-1], outc_list[i], ksize_list[i], pool_list[i]))
+    self.CNNS = nn.Sequential(*self.CNNlist)
+
+    #torch.flattenと異なり,デフォルトでバッチを平滑化しない
+    self.flat = nn.Flatten()
+    
+    #テストモデルでlinearのinputsizeを自動的に求める
+    test_model = simnet_cnn_allsize_ver6_size_test(cnn_layer_num, inc, outc_list, ksize_list, pool_list)
+    outsize = model_outputsize_test(test_model, [1, inc, inh, inw])
+    del test_model
+
+    #outsize=(1, size)なので[1]を取り出す
+    self.fc1 = nn.Linear(outsize[1], linear2_in)
+    self.fc2 = nn.Linear(linear2_in, classes)
+    self.relu = nn.ReLU()
+
+    del outsize
+
+    self.drop = nn.Dropout(p = drop)
+
+
+  def forward(self,x):
+    x = self.CNN1(x)
+    x = self.CNNS(x)
+    x = self.flat(x)
+    x = self.drop(x)
+    x = self.fc1(x)
+    x = self.relu(x)
+    x = self.drop(x)
+    x = self.fc2(x)
+    return F.log_softmax(x, dim=1)
+
+
+
+
 
 #LeakyReLU
 class Conv_Bn_LeakyReLu_He_weight(nn.Module):
@@ -386,15 +474,6 @@ class Conv_Bn_ReLu_He_weight(nn.Module):
 
     #BN層は重み初期化出来ない？
     # nn.init.kaiming_uniform_(self.CNN[1].weight, nonlinearity = 'relu')
-
-
-    # self.cnn = nn.Conv2d(input_channel, output_channel, kernel_size)
-    # #nn.init.kaiming_uniform_(self.cnn.weight, nonlinearity='relu')
-    # self.bn = nn.BatchNorm2d(output_channel)
-    # #nn.init.kaiming_uniform_(self.bn.weight, nonlinearity='relu')
-    # self.relu = nn.ReLU()
-
-    # self.CNN = nn.Sequential(self.cnn, self.bn, self.relu)
 
   def forward(self,x):
     x = self.CNN(x)
