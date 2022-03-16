@@ -609,15 +609,18 @@ def train_decode_model_ver2(dataloader_train, dataloader_val, model, lossfunc, o
 
 
 #convert tensor into numpy
-def tensor_to_numpy(input_tensor):
+def tensor_to_numpy(input_tensor, normTrue):
   output_numpy = input_tensor.to('cpu').detach().numpy().copy()
+  if normTrue:
+    output_numpy *= 255
   output_numpy = np.round(output_numpy)
   output_numpy = np.clip(output_numpy, a_min = 0, a_max = 255)
   output_numpy = output_numpy.astype(np.uint8)
   return output_numpy
 
 #test a decode model and check a output-image
-def test_decode_model_and_check_img_ver3(dataloader, img_width, img_height, model, device, figwidth, figheighgt, from_num, to_num, save_dir_path, label_array = None):
+def test_decode_model_and_check_img_ver3(dataloader, img_width, img_height, model, device, figwidth, figheighgt, from_num, to_num, save_dir_path, \
+  label_array = None, datanorm = False, correctimgnorm = False):
   """
   In addition to ver2, you can decide number of print-image.
   And calculate PSNR, display label_number.
@@ -637,10 +640,10 @@ def test_decode_model_and_check_img_ver3(dataloader, img_width, img_height, mode
       inputs, origin = Variable(inputs), Variable(origin)
       outputs = model(inputs)
       for i in range(len(outputs)):
-        output_img_array = tensor_to_numpy(outputs[i])
+        output_img_array = tensor_to_numpy(outputs[i], datanorm)
         output_img_array = np.resize(output_img_array,(img_height,img_width))
 
-        origin_img_array = tensor_to_numpy(origin_imgs[i])
+        origin_img_array = tensor_to_numpy(origin_imgs[i], correctimgnorm)
         origin_img_array = np.resize(origin_img_array,(img_height,img_width))
 
         psnr = cv2.PSNR(output_img_array, origin_img_array)
