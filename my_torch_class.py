@@ -5,6 +5,18 @@ import torch
 import numpy as np
 import py_func.my_numpy_class as mnc
 
+class My_dataset:
+    def __init__(self, datapath, labelpath):
+        self.datapath = datapath
+        self.labelpath = labelpath
+    def iddataset(self, datawidth, num, length = None):
+        sim = mnc.My_numpy(1, self.datapath)
+        sim.simread(num, datawidth)
+        sim.data = sim.data.reshape(num, 1, datawidth)
+        if length != None:
+            train = sim.data[:length]
+
+
 
 #正則化関数
 #L1正則化
