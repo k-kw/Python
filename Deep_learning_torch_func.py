@@ -4,6 +4,30 @@ import time
 import torch
 import numpy as np
 
+
+def mixup_data(x, y, device, alpha=1.0):
+
+    '''Compute the mixup data. Return mixed inputs, pairs of targets, and lambda'''
+    if alpha > 0.:
+        lam = np.random.beta(alpha, alpha)
+    else:
+        lam = 1.
+    batch_size = x.size()[0]
+    index = torch.randperm(batch_size).to(device)
+    # if use_cuda:
+    #     index = torch.randperm(batch_size).cuda()
+    # else:
+    #     index = torch.randperm(batch_size)
+
+    mixed_x = lam * x + (1 - lam) * x[index,:]
+    y_a, y_b = y, y[index]
+    return mixed_x, y_a, y_b, lam
+
+
+def mixup_criterion(y_a, y_b, lam):
+    return lambda criterion, pred: lam * criterion(pred, y_a) + (1 - lam) * criterion(pred, y_b)
+
+
 #深層学習前の標準化
 def tensor_norm_DL(tensor, mean = None, std = None):
   if mean == None:
@@ -375,6 +399,63 @@ def val_model(dataloader, model, device, lossfunc, predict_label_list_true):
       val.append(label_list)
   
   return val
+
+#Deep Learning(image classification)
+#MIXUP
+def train_model_mixup(dataloader_train, dataloader_val, model, lossfunc, optimizer, epochs, device, L1 = False, alpha = None, L2 = False, mixalpha = 1.0, lamda = None):
+    t1=time.time()
+    train_loss_list = []
+    val_loss_list = []
+    train_acc_list = []
+    val_acc_list = []
+
+    for epoch in range(epochs):
+        model.train()
+        for dat_train in dataloader_train:
+            inputs, labels = dat_train
+            inputs, labels = inputs.to(device), labels.to(device)
+            
+            #mixup
+            inputs, laba, labb, lamda = mixup_data(inputs, labels, device, mixalpha)
+
+            #inputs, labels = Variable(inputs), Variable(labels)
+            
+            inputs, laba, labb = Variable(inputs),  Variable(laba), Variable(labb)
+            optimizer.zero_grad()
+            outputs = model(inputs)
+            #loss = lossfunc(outputs, labels)
+            
+            loss_mix_func = mixup_criterion(laba, labb, lamda)
+            loss = loss_mix_func(lossfunc, outputs)
+
+            #正則化(weight decay)
+            if L2:
+                loss = L2norm(model, lamda, loss)
+            elif L1:
+                loss = L1norm(model, alpha, loss)
+
+
+            loss.backward()
+            optimizer.step()
+
+        val_val = val_model(dataloader_val, model, device, lossfunc, False)
+        val_train = val_model(dataloader_train, model, device, lossfunc, False)
+        train_loss_list.append(val_train[1])
+        val_loss_list.append(val_val[1])
+        train_acc_list.append(val_train[0])
+        val_acc_list.append(val_val[0])
+
+        print(f'エポック{epoch+1}------------------------------')
+        print(f'val_acc{val_val[0]:.4f} ,train_acc{val_train[0]:.4f}')
+        t2=time.time()
+        caltime=(t2-t1)/60
+        print(f'epochtime:{caltime:.4f}分')
+        t1=time.time()
+
+    return train_loss_list, val_loss_list, train_acc_list, val_acc_list
+
+
+
 
 #Deep Learning(image classification)
 def train_model_ver3(dataloader_train, dataloader_val, model, lossfunc, optimizer, epochs, device, \
