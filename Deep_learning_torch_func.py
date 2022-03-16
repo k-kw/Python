@@ -402,7 +402,7 @@ def val_model(dataloader, model, device, lossfunc, predict_label_list_true):
 
 #Deep Learning(image classification)
 #MIXUP
-def train_model_mixup(dataloader_train, dataloader_val, model, lossfunc, optimizer, epochs, device, L1 = False, alpha = None, L2 = False, mixalpha = 1.0, lamda = None):
+def train_model_mixup(dataloader_train, dataloader_val, model, lossfunc, optimizer, epochs, device, L1 = False, alpha = None, L2 = False, lamda = None, mixalpha = 1.0):
     t1=time.time()
     train_loss_list = []
     val_loss_list = []
@@ -416,7 +416,7 @@ def train_model_mixup(dataloader_train, dataloader_val, model, lossfunc, optimiz
             inputs, labels = inputs.to(device), labels.to(device)
             
             #mixup
-            inputs, laba, labb, lamda = mixup_data(inputs, labels, device, mixalpha)
+            inputs, laba, labb, mixlamda = mixup_data(inputs, labels, device, mixalpha)
 
             #inputs, labels = Variable(inputs), Variable(labels)
             
@@ -425,7 +425,7 @@ def train_model_mixup(dataloader_train, dataloader_val, model, lossfunc, optimiz
             outputs = model(inputs)
             #loss = lossfunc(outputs, labels)
             
-            loss_mix_func = mixup_criterion(laba, labb, lamda)
+            loss_mix_func = mixup_criterion(laba, labb, mixlamda)
             loss = loss_mix_func(lossfunc, outputs)
 
             #正則化(weight decay)
