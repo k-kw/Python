@@ -572,6 +572,45 @@ def val_decode_model(dataloader, model, device, lossfunc):
   
   return val
 
+
+#Deep Learning(decode)
+def train_decode_model_mixup(dataloader_train, dataloader_val, model, lossfunc, optimizer, epochs, device, mixalpha = 1.0):
+    t1=time.time()
+    train_loss_list=[]
+    val_loss_list=[]
+
+    for epoch in range(epochs):
+        model.train()
+        for dat_train in dataloader_train:
+            inputs, origin = dat_train
+            inputs, origin = inputs.to(device), origin.to(device)
+            # inputs, origin = Variable(inputs), Variable(origin)
+            inputs, laba, labb, mixlamda = mixup_data(inputs, origin, device, mixalpha)
+            inputs, laba, labb = Variable(inputs), Variable(laba), Variable(labb)
+
+            optimizer.zero_grad()
+            outputs = model(inputs)
+
+            # loss = lossfunc(outputs, origin)
+            loss_mix_func = mixup_criterion(laba, labb, mixlamda)
+            loss = loss_mix_func(lossfunc, outputs)
+            loss.backward()
+            optimizer.step()
+
+        val_val = val_decode_model(dataloader_val, model, device, lossfunc)
+        val_train = val_decode_model(dataloader_train, model, device, lossfunc)
+        train_loss_list.append(val_train[0])
+        val_loss_list.append(val_val[0])
+        t2=time.time()
+        caltime=(t2-t1)/60
+        print(f'エポック{epoch+1}--------------------------------')
+        print(f'epochtime:{caltime}分, train_loss:{val_train[0]}, val_loss:{val_val[0]}')
+        t1=time.time()
+
+    return train_loss_list, val_loss_list
+
+
+
 #Deep Learning(decode)
 def train_decode_model_ver2(dataloader_train, dataloader_val, model, lossfunc, optimizer, epochs, device):
   """
