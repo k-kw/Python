@@ -508,43 +508,6 @@ def train_model_ver3(dataloader_train, dataloader_val, model, lossfunc, optimize
 
   return train_loss_list, val_loss_list, train_acc_list, val_acc_list
 
-#Deep Learning(image classification)
-def train_model_ver2(dataloader_train, dataloader_val, model, lossfunc, optimizer, epochs, device):
-  """
-  transfer displaying learning_curv from this function.
-  """
-  t1=time.time()
-  train_loss_list = []
-  val_loss_list = []
-  train_acc_list = []
-  val_acc_list = []
-  for epoch in range(epochs):
-    model.train()
-    for dat_train in dataloader_train:
-        inputs, labels = dat_train
-        inputs, labels = inputs.to(device), labels.to(device)
-        inputs, labels = Variable(inputs), Variable(labels)
-        optimizer.zero_grad()
-        outputs = model(inputs)
-        loss = lossfunc(outputs, labels)
-        loss.backward()
-        optimizer.step()
-    
-    val_val = val_model(dataloader_val, model, device, lossfunc, False)
-    val_train = val_model(dataloader_train, model, device, lossfunc, False)
-    train_loss_list.append(val_train[1])
-    val_loss_list.append(val_val[1])
-    train_acc_list.append(val_train[0])
-    val_acc_list.append(val_val[0])
-
-    print(f'エポック{epoch+1}------------------------------')
-    print(f'val_acc{val_val[0]} ,train_acc{val_train[0]}')
-    t2=time.time()
-    caltime=(t2-t1)/60
-    print(f'epochtime:{caltime}分')
-    t1=time.time()
-
-  return train_loss_list, val_loss_list, train_acc_list, val_acc_list
 
 
 
@@ -708,69 +671,109 @@ def test_decode_model_and_check_img_ver3(dataloader, img_width, img_height, mode
         img_num += 1
   return psnrs
 
-#test a decode model and check a output-image
-def test_decode_model_and_check_img_ver2(dataloader, img_width, img_height,model, device, figwidth, figheighgt):
-  """
-  In addition to ver1, you can change figure-size.
-  """
-  import numpy as np
-  model.eval()
-  
-  with torch.no_grad():
-    for inputs, origin in dataloader:
-      inputs, origin = inputs.to(device), origin.to(device)
-      origin_imgs = origin
-      inputs, origin = Variable(inputs), Variable(origin)
-      outputs = model(inputs)
-      for i in range(len(outputs)):
-        output_img_array = tensor_to_numpy(outputs[i])
-        output_img_array = np.resize(output_img_array,(img_height,img_width))
-
-        origin_img_array = tensor_to_numpy(origin_imgs[i])
-        origin_img_array = np.resize(origin_img_array,(img_height,img_width))
-
-        plt.rcParams["figure.figsize"] = (figwidth, figheighgt)
-        plt.subplot(1,2,1)
-        plt.imshow(output_img_array)
-        plt.subplot(1,2,2)
-        plt.gray()
-        plt.imshow(origin_img_array)
-        plt.show()
-
-#test a decode model and check a output-image
-def test_decode_model_and_check_img(dataloader, img_width, img_height, model, device):
-  import numpy as np
-  model.eval()
-  
-  with torch.no_grad():
-    for inputs, origin in dataloader:
-      inputs, origin = inputs.to(device), origin.to(device)
-      origin_imgs = origin
-      inputs, origin = Variable(inputs), Variable(origin)
-      outputs = model(inputs)
-      for i,output_tensor in enumerate(outputs):
-        output_img_array = tensor_to_numpy(output_tensor)
-
-        output_img_array = np.resize(output_img_array,(img_height,img_width))
-
-        plt.rcParams["figure.figsize"] = (18, 40)
-        plt.subplot(len(outputs),2,2*i+1)
-        plt.imshow(output_img_array)
-      
-      for i,origin_img in enumerate(origin_imgs):
-        origin_img_array = tensor_to_numpy(origin_img)
-
-        origin_img_array = np.resize(origin_img_array,(img_height,img_width))
-        
-        plt.rcParams["figure.figsize"] = (18, 40)
-        plt.subplot(len(outputs),2,2*i+2)
-        plt.imshow(origin_img_array)
-
 
 
 if __name__=='__main__':
     print('Functions related Deep Learning ')
 
+# #test a decode model and check a output-image
+# def test_decode_model_and_check_img_ver2(dataloader, img_width, img_height,model, device, figwidth, figheighgt):
+#   """
+#   In addition to ver1, you can change figure-size.
+#   """
+#   import numpy as np
+#   model.eval()
+  
+#   with torch.no_grad():
+#     for inputs, origin in dataloader:
+#       inputs, origin = inputs.to(device), origin.to(device)
+#       origin_imgs = origin
+#       inputs, origin = Variable(inputs), Variable(origin)
+#       outputs = model(inputs)
+#       for i in range(len(outputs)):
+#         output_img_array = tensor_to_numpy(outputs[i])
+#         output_img_array = np.resize(output_img_array,(img_height,img_width))
+
+#         origin_img_array = tensor_to_numpy(origin_imgs[i])
+#         origin_img_array = np.resize(origin_img_array,(img_height,img_width))
+
+#         plt.rcParams["figure.figsize"] = (figwidth, figheighgt)
+#         plt.subplot(1,2,1)
+#         plt.imshow(output_img_array)
+#         plt.subplot(1,2,2)
+#         plt.gray()
+#         plt.imshow(origin_img_array)
+#         plt.show()
+
+# #test a decode model and check a output-image
+# def test_decode_model_and_check_img(dataloader, img_width, img_height, model, device):
+#   import numpy as np
+#   model.eval()
+  
+#   with torch.no_grad():
+#     for inputs, origin in dataloader:
+#       inputs, origin = inputs.to(device), origin.to(device)
+#       origin_imgs = origin
+#       inputs, origin = Variable(inputs), Variable(origin)
+#       outputs = model(inputs)
+#       for i,output_tensor in enumerate(outputs):
+#         output_img_array = tensor_to_numpy(output_tensor)
+
+#         output_img_array = np.resize(output_img_array,(img_height,img_width))
+
+#         plt.rcParams["figure.figsize"] = (18, 40)
+#         plt.subplot(len(outputs),2,2*i+1)
+#         plt.imshow(output_img_array)
+      
+#       for i,origin_img in enumerate(origin_imgs):
+#         origin_img_array = tensor_to_numpy(origin_img)
+
+#         origin_img_array = np.resize(origin_img_array,(img_height,img_width))
+        
+#         plt.rcParams["figure.figsize"] = (18, 40)
+#         plt.subplot(len(outputs),2,2*i+2)
+#         plt.imshow(origin_img_array)
+
+
+
+
+# #Deep Learning(image classification)
+# def train_model_ver2(dataloader_train, dataloader_val, model, lossfunc, optimizer, epochs, device):
+#   """
+#   transfer displaying learning_curv from this function.
+#   """
+#   t1=time.time()
+#   train_loss_list = []
+#   val_loss_list = []
+#   train_acc_list = []
+#   val_acc_list = []
+#   for epoch in range(epochs):
+#     model.train()
+#     for dat_train in dataloader_train:
+#         inputs, labels = dat_train
+#         inputs, labels = inputs.to(device), labels.to(device)
+#         inputs, labels = Variable(inputs), Variable(labels)
+#         optimizer.zero_grad()
+#         outputs = model(inputs)
+#         loss = lossfunc(outputs, labels)
+#         loss.backward()
+#         optimizer.step()
+    
+#     val_val = val_model(dataloader_val, model, device, lossfunc, False)
+#     val_train = val_model(dataloader_train, model, device, lossfunc, False)
+#     train_loss_list.append(val_train[1])
+#     val_loss_list.append(val_val[1])
+#     train_acc_list.append(val_train[0])
+#     val_acc_list.append(val_val[0])
+
+#     print(f'エポック{epoch+1}------------------------------')
+#     print(f'val_acc{val_val[0]} ,train_acc{val_train[0]}')
+#     t2=time.time()
+#     caltime=(t2-t1)/60
+#     print(f'epochtime:{caltime}分')
+#     t1=time.time()
+
+#   return train_loss_list, val_loss_list, train_acc_list, val_acc_list
 
 
 # #Make dataset from sindatpath and bindatpath(for decoder model)
