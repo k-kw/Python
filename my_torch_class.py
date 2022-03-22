@@ -5,18 +5,63 @@ import torch
 import numpy as np
 import py_func.my_numpy_class as mnc
 
+#深層学習前の標準化
+def tensor_norm_DL(tensor, mean = None, std = None):
+    if mean == None:
+        mean = torch.mean(tensor)
+    if std == None:
+        std = torch.std(tensor)
+    re_tensor = (tensor - mean)/std
+    return re_tensor, mean, std
+
+#正規化
+def tensor_norm(tensor, max = None, min = None):
+    if max == None:
+        max = torch.max(tensor)
+    if min == None:
+        min = torch.min(tensor)
+    re_tensor = (tensor - min)/(max - min)
+    return re_tensor, max, min
+
 class My_dataset:
-    def __init__(self, datapath, labelpath):
-        self.datapath = datapath
-        self.labelpath = labelpath
-    def iddataset(self, datawidth, num, length = None):
-        sim = mnc.My_numpy(1, self.datapath)
-        sim.simread(num, datawidth)
-        sim.data = sim.data.reshape(num, 1, datawidth)
-        if length != None:
-            train = sim.data[:length]
+    def __init__(self, numpydata, numpylabel):
+        self.data = numpydata
+        self.labels = numpylabel
+    
+    def numpy2tensor(self):
+        self.data = torch.tensor(self.data, dtype = torch.float32)
+        self.labels = torch.tensor(self.labels, dtype = torch.float32)
+
+    def numpy2tensor_labelint(self):
+        self.data = torch.tensor(self.data, dtype = torch.float32)
+        self.labels = self.labels.astype(int)
+        self.labels = torch.tensor(self.labels, dtype = torch.int64)
+
+    
+    def splitdata(self, train_length):
+        self.data_t, self.data_v = self.data[:train_length], self.data[train_length:]
+        self.label_t, self.label_v = self.labels[:train_length], self.labels[train_length:]
 
 
+    def datanormalize(self):
+        self.data_t, self.mean, self.std = tensor_norm_DL(self.data_t)
+        self.data_v, _, _ = tensor_norm_DL(self.data_v, self.mean, self.std)
+
+
+    def labelnormalize(self):
+        self.label_t, max, min = tensor_norm(self.label_t)
+        self.label_v, _, _ = tensor_norm(self.label_v, max, min)
+
+
+    def tensor2dataset(self):
+        self.dataset_train = torch.utils.data.TensorDataset(self.data_t, self.label_t)
+        self.dataset_val = torch.utils.data.TensorDataset(self.data_v, self.label_v)
+
+
+
+
+
+        
 
 #正則化関数
 #L1正則化

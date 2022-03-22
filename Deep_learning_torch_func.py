@@ -33,7 +33,7 @@ def tensor_norm_DL(tensor, mean = None, std = None):
   if mean == None:
     mean = torch.mean(tensor)
   if std == None:
-    std = torch.mean(tensor)
+    std = torch.std(tensor)
   re_tensor = (tensor - mean)/std
   return re_tensor, mean, std
 
