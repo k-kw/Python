@@ -266,6 +266,7 @@ class simnet_decoder_allsize(nn.Module):
 
 
 #classfication_model
+#one-dimensional
 class Conv1d_Bn_ReLU_Pool(nn.Module):
     def __init__(self, inc, outc, ksize, pool):
         super().__init__()
@@ -273,7 +274,7 @@ class Conv1d_Bn_ReLU_Pool(nn.Module):
             nn.Conv1d(inc, outc, ksize),
             nn.BatchNorm1d(outc),
             nn.ReLU(),
-            nn.MaxPool2d((pool, pool))
+            nn.MaxPool1d(pool)
         
         )
     def forward(self, x):
