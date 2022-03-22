@@ -266,6 +266,55 @@ class simnet_decoder_allsize(nn.Module):
 
 
 #classfication_model
+class Conv1d_Bn_ReLU_Pool(nn.Module):
+    def __init__(self, inc, outc, ksize, pool):
+        super().__init__()
+        self.CNN1d = nn.Sequential(
+            nn.Conv1d(inc, outc, ksize),
+            nn.BatchNorm1d(outc),
+            nn.ReLU(),
+            nn.MaxPool2d((pool, pool))
+        
+        )
+    def forward(self, x):
+        x = self.CNN1d(x)
+        return x
+
+class simnet_cnn1d(nn.Module):
+    def __init__(self, cnn_layer_num, inc, outc_list, ksize_list, pool_list, classes, drop, linear2_in):
+        super().__init__()
+        self.cnn_layer_num = cnn_layer_num
+        self.CNN1 =  Conv1d_Bn_ReLU_Pool(inc, outc_list[0], ksize_list[0], pool_list[0])
+
+        self.CNNlist = []
+        for i in range(1, self.cnn_layer_num):
+            self.CNNlist.append(Conv1d_Bn_ReLU_Pool(outc_list[i-1], outc_list[i], ksize_list[i], pool_list[i]))
+        self.CNNS = nn.Sequential(*self.CNNlist)
+
+        self.flat = nn.Flatten()
+
+        self.fc1 = nn.LazyLinear(linear2_in)
+        self.fc2 = nn.Linear(linear2_in, classes)
+        self.relu = nn.ReLU()
+
+        self.drop = nn.Dropout(p = drop)
+
+    def forward(self, x):
+        x = self.CNN1(x)
+        x = self.CNNS(x)
+        x = self.flat(x)
+        x = self.drop(x)
+        x = self.fc1(x)
+        x = self.relu(x)
+        x = self.drop(x)
+        x = self.fc2(x)
+        return F.log_softmax(x, dim = 1)
+
+
+
+
+
+
 #プーリング
 class Conv_Bn_ReLU_Pool(nn.Module):
     def __init__(self, inc, outc, ksize, pool):
