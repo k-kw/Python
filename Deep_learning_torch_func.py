@@ -359,50 +359,51 @@ def L2norm(model, lamda, loss):
 
 #Deep Learning validation(image classification)
 def val_model(dataloader, model, device, lossfunc, predict_label_list_true):
-  model.eval()
-  correct = 0
-  total = 0
-  val_loss = 0
-  val = []
-
-  if (predict_label_list_true == True):
-    predict_list = []
-    label_list = []
-  
-  with torch.no_grad():
-    for inputs, labels in dataloader:
-      inputs, labels = inputs.to(device), labels.to(device)
-      inputs, labels = Variable(inputs), Variable(labels)
-      outputs = model(inputs)
-      loss = lossfunc(outputs, labels)
-      val_loss += loss.item()
-      #_, predicted = torch.max(outputs.data, 1)
-      predicted = torch.argmax(outputs.data, 1)
-      total += labels.size(0)
-      correct += (predicted == labels).sum().item()
-
-      if (predict_label_list_true == True):
-        for i in range(len(predicted)):
-          tmp = int(predicted[i])
-          predict_list.append(tmp)
-        for i in range(len(labels)):
-          tmp = int(labels[i])
-          label_list.append(tmp)
-
-    acc = float(correct)/total
-    val_loss = val_loss/len(dataloader.dataset)
-    val.append(acc)
-    val.append(val_loss)
+    model.eval()
+    correct = 0
+    total = 0
+    val_loss = 0
+    val = []
 
     if (predict_label_list_true == True):
-      val.append(predict_list)
-      val.append(label_list)
+        predict_list = []
+        label_list = []
   
-  return val
+    with torch.no_grad():
+        for inputs, labels in dataloader:
+            inputs, labels = inputs.to(device), labels.to(device)
+            inputs, labels = Variable(inputs), Variable(labels)
+            outputs = model(inputs)
+            loss = lossfunc(outputs, labels)
+            val_loss += loss.item()
+            #_, predicted = torch.max(outputs.data, 1)
+            predicted = torch.argmax(outputs.data, 1)
+            total += labels.size(0)
+            correct += (predicted == labels).sum().item()
+
+            if (predict_label_list_true == True):
+                for i in range(len(predicted)):
+                    tmp = int(predicted[i])
+                    predict_list.append(tmp)
+                for i in range(len(labels)):
+                    tmp = int(labels[i])
+                    label_list.append(tmp)
+
+        acc = float(correct)/total
+        val_loss = val_loss/len(dataloader.dataset)
+        val.append(acc)
+        val.append(val_loss)
+
+        if (predict_label_list_true == True):
+            val.append(predict_list)
+            val.append(label_list)
+
+    return val
 
 #Deep Learning(image classification)
 #MIXUP
-def train_model_mixup(dataloader_train, dataloader_val, model, lossfunc, optimizer, epochs, device, L1 = False, alpha = None, L2 = False, lamda = None, mixalpha = 1.0):
+def train_model_mixup(dataloader_train, dataloader_val, model, lossfunc, optimizer, epochs, device, \
+    L1 = False, alpha = None, L2 = False, lamda = None, mixalpha = 1.0, scheduler = None):
     t1=time.time()
     train_loss_list = []
     val_loss_list = []
@@ -437,6 +438,9 @@ def train_model_mixup(dataloader_train, dataloader_val, model, lossfunc, optimiz
 
             loss.backward()
             optimizer.step()
+        
+        if(scheduler != None):
+            scheduler.step()
 
         val_val = val_model(dataloader_val, model, device, lossfunc, False)
         val_train = val_model(dataloader_train, model, device, lossfunc, False)
@@ -459,54 +463,57 @@ def train_model_mixup(dataloader_train, dataloader_val, model, lossfunc, optimiz
 
 #Deep Learning(image classification)
 def train_model_ver3(dataloader_train, dataloader_val, model, lossfunc, optimizer, epochs, device, \
-  L1 = False, alpha = None, L2 = False, lamda = None):
-  """
-  transfer displaying learning_curv from this function.
-  select weight decay option
-  L1 : bool
-  L2 : bool
-  alpha and lamda are parameter
-  """
-  t1=time.time()
-  train_loss_list = []
-  val_loss_list = []
-  train_acc_list = []
-  val_acc_list = []
-  for epoch in range(epochs):
-    model.train()
-    for dat_train in dataloader_train:
-        inputs, labels = dat_train
-        inputs, labels = inputs.to(device), labels.to(device)
-        inputs, labels = Variable(inputs), Variable(labels)
-        optimizer.zero_grad()
-        outputs = model(inputs)
-        loss = lossfunc(outputs, labels)
-
-        #正則化(weight decay)
-        if L2:
-          loss = L2norm(model, lamda, loss)
-        elif L1:
-          loss = L1norm(model, alpha, loss)
-
-
-        loss.backward()
-        optimizer.step()
-    
-    val_val = val_model(dataloader_val, model, device, lossfunc, False)
-    val_train = val_model(dataloader_train, model, device, lossfunc, False)
-    train_loss_list.append(val_train[1])
-    val_loss_list.append(val_val[1])
-    train_acc_list.append(val_train[0])
-    val_acc_list.append(val_val[0])
-
-    print(f'エポック{epoch+1}------------------------------')
-    print(f'val_acc{val_val[0]:.4f} ,train_acc{val_train[0]:.4f}')
-    t2=time.time()
-    caltime=(t2-t1)/60
-    print(f'epochtime:{caltime:.4f}分')
+    L1 = False, alpha = None, L2 = False, lamda = None, scheduler = None):
+    """
+    transfer displaying learning_curv from this function.
+    select weight decay option
+    L1 : bool
+    L2 : bool
+    alpha and lamda are parameter
+    """
     t1=time.time()
+    train_loss_list = []
+    val_loss_list = []
+    train_acc_list = []
+    val_acc_list = []
+    for epoch in range(epochs):
+        model.train()
+        for dat_train in dataloader_train:
+            inputs, labels = dat_train
+            inputs, labels = inputs.to(device), labels.to(device)
+            inputs, labels = Variable(inputs), Variable(labels)
+            optimizer.zero_grad()
+            outputs = model(inputs)
+            loss = lossfunc(outputs, labels)
 
-  return train_loss_list, val_loss_list, train_acc_list, val_acc_list
+            #正則化(weight decay)
+            if L2:
+                loss = L2norm(model, lamda, loss)
+            elif L1:
+                loss = L1norm(model, alpha, loss)
+
+
+            loss.backward()
+            optimizer.step()
+
+        if(scheduler != None):
+            scheduler.step()
+
+        val_val = val_model(dataloader_val, model, device, lossfunc, False)
+        val_train = val_model(dataloader_train, model, device, lossfunc, False)
+        train_loss_list.append(val_train[1])
+        val_loss_list.append(val_val[1])
+        train_acc_list.append(val_train[0])
+        val_acc_list.append(val_val[0])
+
+        print(f'エポック{epoch+1}------------------------------')
+        print(f'val_acc{val_val[0]:.4f} ,train_acc{val_train[0]:.4f}')
+        t2=time.time()
+        caltime=(t2-t1)/60
+        print(f'epochtime:{caltime:.4f}分')
+        t1=time.time()
+
+    return train_loss_list, val_loss_list, train_acc_list, val_acc_list
 
 
 
