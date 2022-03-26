@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 from torch.autograd import Variable
 import time
 import torch
+from torch.utils.data import Dataset, DataLoader
 import numpy as np
 import py_func.my_numpy_class as mnc
 
@@ -23,6 +24,7 @@ def tensor_norm(tensor, max = None, min = None):
     re_tensor = (tensor - min)/(max - min)
     return re_tensor, max, min
 
+#numpy配列から自力でデータセットを作成するクラス
 class My_dataset:
     def __init__(self, numpydata, numpylabel):
         self.data = numpydata
@@ -56,6 +58,104 @@ class My_dataset:
     def tensor2dataset(self):
         self.dataset_train = torch.utils.data.TensorDataset(self.data_t, self.label_t)
         self.dataset_val = torch.utils.data.TensorDataset(self.data_v, self.label_v)
+
+
+
+
+
+
+def channeltensor_mean_std(tensors):
+    """
+    tensors's shape must be Length,C,...
+    """
+
+    mean, std = [], []
+
+    for channel in range(tensors.shape[1]):
+        mean.append(torch.mean(tensors[:, channel, :]))
+        std.append(torch.std(tensors[:, channel, :]))
+
+    return mean, std
+
+
+
+#transformsのNormalizeが２次元データセットのみなのでこのクラスは使えない
+#torchのデータセットクラスを継承してnumpy配列からデータセットを作成
+class classifydataset(Dataset):
+    """
+    data's shape must be Length,C,W
+    """
+    def __init__(self, data, labels, transform = None):
+        #self.super().__init__()
+        self.data = torch.tensor(data, dtype = torch.float32)
+        tmplabels = labels.astype(int)
+        self.labels = torch.tensor(tmplabels, dtype = torch.int64)
+        self.transform = transform
+    
+    def datameanstd(self):
+        """
+        return mean-list and std-list of data
+        """
+        return channeltensor_mean_std(self.data)
+    
+    def settransform(self, transform):
+        self.transform = transform
+
+
+    def __getitem__(self, idx):
+        outdata = self.data[idx]
+        outlabel = self.labels[idx]
+
+        if self.transform:
+            outdata = self.transform(outdata)
+        
+        return outdata, outlabel
+    
+    def __len__(self):
+        return self.data.shape[0]
+
+
+class decodedataset(Dataset):
+    """
+    data's shape must be Length,C,W
+    origimgs's shape must be Length,C,H,W
+    """
+    def __init__(self, data, origimgs, transform1 = None, transform2 = None):
+        #self.super().__init__()
+        self.data = torch.tensor(data, dtype = torch.float32)
+        self.origimgs = torch.tensor(origimgs, dtype = torch.float32)
+        
+        self.transform1 = transform1
+        self.transform2 = transform2
+
+    def datameanstd(self):
+        """
+        return mean-list and std-list of data
+        """
+        return channeltensor_mean_std(self.data)
+
+    def settransform(self, transform1, transform2):
+        self.transform1 = transform1
+        self.transform2 = transform2
+
+
+
+
+    def __getitem__(self, idx):
+        outdata = self.data[idx]
+        outorig = self.origimgs[idx]
+
+        if self.transform1:
+            outdata = self.transform1(outdata)
+        
+        if self.transform2:
+            outorig = self.transform2(outorig)
+        
+        return outdata, outorig
+    
+    def __len__(self):
+        return self.data.shape[0]
+
 
 
 
