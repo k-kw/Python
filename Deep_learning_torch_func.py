@@ -3,8 +3,25 @@ from torch.autograd import Variable
 import time
 import torch
 import numpy as np
+import torch.nn as nn
 
 
+
+
+#Data Augumentation
+
+#assign Gaussian Noise Layer
+class GaussianNoise(nn.Module):
+    def __init__(self, stddev, device):
+        super().__init__()
+        self.stddev = stddev
+        self.device = device
+    
+    def forward(self, x):
+        return x + torch.autograd.Variable(torch.randn(x.size()).to(self.device) * self.stddev)
+
+
+#Mixup
 def mixup_data(x, y, device, alpha=1.0):
 
     '''Compute the mixup data. Return mixed inputs, pairs of targets, and lambda'''
@@ -28,6 +45,10 @@ def mixup_criterion(y_a, y_b, lam):
     return lambda criterion, pred: lam * criterion(pred, y_a) + (1 - lam) * criterion(pred, y_b)
 
 
+
+
+
+
 #深層学習前の標準化
 def tensor_norm_DL(tensor, mean = None, std = None):
   if mean == None:
@@ -45,6 +66,487 @@ def tensor_norm(tensor, max = None, min = None):
     min = torch.min(tensor)
   re_tensor = (tensor - min)/(max - min)
   return re_tensor, max, min
+
+
+
+#Create and save confusion-matrix
+def create_cfmat(labels,predictions,matrix_save_path,vmax,figsy,figsx,fontsize):
+  import seaborn as sns
+  from sklearn.metrics import confusion_matrix
+
+  _, ax = plt.subplots(figsize = (figsy, figsx))
+  #plt.rcParams["font.size"] = fontsize
+
+  cm = confusion_matrix(labels,predictions)
+  sns.heatmap(cm,square=True,cmap='Blues',annot=True,fmt='d',ax=ax,vmax=vmax,vmin=0,annot_kws={"size":fontsize})
+  
+  plt.savefig(matrix_save_path)
+
+
+
+
+
+#Displaying learning-curv_ver2
+def learning_curv_ver2( fig_w, fig_h, labelfontsize, scalefontsize, tls = None, vls = None, tas = None, vas = None):
+  """
+  you must prepare vls.
+  """
+  rcparams_dic = {
+    'figure.figsize': (fig_w,fig_h),
+    'axes.labelsize': labelfontsize,
+    'xtick.labelsize': scalefontsize,
+    'ytick.labelsize': scalefontsize,
+  }
+  plt.rcParams.update(rcparams_dic)
+
+  #正解率の配列を持っている場合
+  if (tas != None) or (vas != None):
+    plt.subplots_adjust(wspace=0.4, hspace=0.6)
+    plt.subplot(1,2,1)
+  
+  if tls != None:
+    plt.plot(range(1, 1 + len(tls)), tls, label="training")
+  plt.plot(range(1, 1 + len(vls)), vls, label="validation")
+  plt.xlabel('Epochs')
+  plt.ylabel('Loss')
+  plt.legend()
+
+  if (vas != None) or (tas != None):
+    plt.subplot(1,2,2)
+    if tas != None:
+      plt.plot(range(1, 1 + len(tas)), tas, label="training")
+    plt.plot(range(1, 1 + len(vas)), vas, label="validation")
+    plt.xlabel('Epochs')
+    plt.ylabel('Acc')
+    plt.legend()
+
+  plt.show()
+
+#Displaying learning-curv
+def learning_curv(acc_cf, valloss, valacc, train_cf, trainloss, trainacc, fig_w, fig_h, labelfontsize, scalefontsize):
+  
+  rcparams_dic = {
+    'figure.figsize': (fig_w,fig_h),
+    'axes.labelsize': labelfontsize,
+    'xtick.labelsize': scalefontsize,
+    'ytick.labelsize': scalefontsize,
+  }
+  plt.rcParams.update(rcparams_dic)
+
+
+  if acc_cf == True:
+    plt.subplots_adjust(wspace=0.4, hspace=0.6)
+    plt.subplot(1,2,1)
+  
+  if train_cf == True:
+    plt.plot(range(1, 1 + len(trainloss)), trainloss, label="training")
+  plt.plot(range(1, 1 + len(valloss)), valloss, label="validation")
+  plt.xlabel('Epochs')
+  plt.ylabel('Loss')
+  plt.legend()
+
+  if acc_cf == True:
+    plt.subplot(1,2,2)
+    if train_cf == True:
+      plt.plot(range(1, 1 + len(trainloss)), trainacc, label="training")
+    plt.plot(range(1, 1 + len(trainloss)), valacc, label="validation")
+    plt.xlabel('Epochs')
+    plt.ylabel('Acc')
+    plt.legend()
+
+  plt.show()
+
+
+
+
+
+
+
+
+#正則化関数
+#L1正則化
+def L1norm(model, alpha, loss):
+  l1 = torch.tensor(0., requires_grad=True)
+  for w in model.parameters():
+    #重みの大きさの総和
+    l1 = l1 + torch.norm(w, 1)
+  loss = loss + alpha*l1
+  return loss
+
+#L2正則化
+def L2norm(model, lamda, loss):
+  l2 = torch.tensor(0., requires_grad=True)
+  for w in model.parameters():
+    #重みの大きさの2乗和
+    l2 = l2 + torch.norm(w)**2
+  loss = loss + lamda*l2/2
+  return loss
+
+
+
+
+
+
+
+#Deep Learning validation(image classification)
+def val_model(dataloader, model, device, lossfunc, predict_label_list_true):
+    model.eval()
+    correct = 0
+    total = 0
+    val_loss = 0
+    val = []
+
+    if (predict_label_list_true == True):
+        predict_list = []
+        label_list = []
+  
+    with torch.no_grad():
+        for inputs, labels in dataloader:
+            inputs, labels = inputs.to(device), labels.to(device)
+            inputs, labels = Variable(inputs), Variable(labels)
+            outputs = model(inputs)
+            loss = lossfunc(outputs, labels)
+            val_loss += loss.item()
+            #_, predicted = torch.max(outputs.data, 1)
+            predicted = torch.argmax(outputs.data, 1)
+            total += labels.size(0)
+            correct += (predicted == labels).sum().item()
+
+            if (predict_label_list_true == True):
+                for i in range(len(predicted)):
+                    tmp = int(predicted[i])
+                    predict_list.append(tmp)
+                for i in range(len(labels)):
+                    tmp = int(labels[i])
+                    label_list.append(tmp)
+
+        acc = float(correct)/total
+        val_loss = val_loss/len(dataloader.dataset)
+        val.append(acc)
+        val.append(val_loss)
+
+        if (predict_label_list_true == True):
+            val.append(predict_list)
+            val.append(label_list)
+
+    return val
+
+#Deep Learning(image classification)
+#MIXUP
+def train_model_mixup(dlt, dlv, model, lossfunc, optimizer, epochs, device, \
+    L1 = False, alpha = None, L2 = False, lamda = None, \
+        mixalpha = 1.0, scheduler = None):
+    t1=time.time()
+    train_loss_list = []
+    val_loss_list = []
+    train_acc_list = []
+    val_acc_list = []
+
+    for epoch in range(epochs):
+        model.train()
+        for dat_train in dlt:
+            inputs, labels = dat_train
+            inputs, labels = inputs.to(device), labels.to(device)
+            
+            #mixup
+            inputs, laba, labb, mixlamda = mixup_data(inputs, labels, device, mixalpha)
+
+            #inputs, labels = Variable(inputs), Variable(labels)
+            
+            inputs, laba, labb = Variable(inputs),  Variable(laba), Variable(labb)
+            optimizer.zero_grad()
+            outputs = model(inputs)
+            #loss = lossfunc(outputs, labels)
+            
+            loss_mix_func = mixup_criterion(laba, labb, mixlamda)
+            loss = loss_mix_func(lossfunc, outputs)
+
+            #正則化(weight decay)
+            if L2:
+                loss = L2norm(model, lamda, loss)
+            elif L1:
+                loss = L1norm(model, alpha, loss)
+
+
+            loss.backward()
+            optimizer.step()
+        
+        if(scheduler != None):
+            scheduler.step()
+
+        val_val = val_model(dlv, model, device, lossfunc, False)
+        val_train = val_model(dlt, model, device, lossfunc, False)
+        train_loss_list.append(val_train[1])
+        val_loss_list.append(val_val[1])
+        train_acc_list.append(val_train[0])
+        val_acc_list.append(val_val[0])
+
+        print(f'エポック{epoch+1}------------------------------')
+        print(f'val_acc{val_val[0]:.4f} ,train_acc{val_train[0]:.4f}')
+        t2=time.time()
+        caltime=(t2-t1)/60
+        print(f'epochtime:{caltime:.4f}分')
+        t1=time.time()
+
+    return train_loss_list, val_loss_list, train_acc_list, val_acc_list
+
+
+
+
+#Deep Learning(image classification)
+def train_model_ver3(dlt, dlv, model, lossfunc, optimizer, epochs, device, \
+    L1 = False, alpha = None, L2 = False, lamda = None, \
+        scheduler = None, gausnoise = False, stddev = 0.01):
+    """
+    transfer displaying learning_curv from this function.
+    select weight decay option
+    L1 : bool
+    L2 : bool
+    alpha and lamda are parameter
+    """
+    t1=time.time()
+    train_loss_list = []
+    val_loss_list = []
+    train_acc_list = []
+    val_acc_list = []
+
+    #ガウシアンノイズ付与レイヤを定義
+    if (gausnoise):
+        gn = GaussianNoise(stddev, device)
+
+    for epoch in range(epochs):
+        model.train()
+        for dat_train in dlt:
+            inputs, labels = dat_train
+            inputs, labels = inputs.to(device), labels.to(device)
+            inputs, labels = Variable(inputs), Variable(labels)
+
+            #ガウシアンノイズを付与
+            if (gausnoise):
+                inputs = gn(inputs)
+
+
+            optimizer.zero_grad()
+            outputs = model(inputs)
+            loss = lossfunc(outputs, labels)
+
+            #正則化(weight decay)
+            if L2:
+                loss = L2norm(model, lamda, loss)
+            elif L1:
+                loss = L1norm(model, alpha, loss)
+
+
+            loss.backward()
+            optimizer.step()
+
+        if(scheduler != None):
+            scheduler.step()
+
+        val_val = val_model(dlv, model, device, lossfunc, False)
+        val_train = val_model(dlt, model, device, lossfunc, False)
+        train_loss_list.append(val_train[1])
+        val_loss_list.append(val_val[1])
+        train_acc_list.append(val_train[0])
+        val_acc_list.append(val_val[0])
+
+        print(f'エポック{epoch+1}------------------------------')
+        print(f'val_acc{val_val[0]:.4f} ,train_acc{val_train[0]:.4f}')
+        t2=time.time()
+        caltime=(t2-t1)/60
+        print(f'epochtime:{caltime:.4f}分')
+        t1=time.time()
+
+    return train_loss_list, val_loss_list, train_acc_list, val_acc_list
+
+
+
+
+
+
+
+
+#Deep Learning validation(decode)
+def val_decode_model(dataloader, model, device, lossfunc):
+  model.eval()
+  val_loss = 0
+  val = []
+  
+  with torch.no_grad():
+    for inputs, origin in dataloader:
+      inputs, origin = inputs.to(device), origin.to(device)
+      inputs, origin = Variable(inputs), Variable(origin)
+      outputs = model(inputs)
+      loss = lossfunc(outputs, origin)
+      val_loss += loss.item()
+
+    
+    val_loss = val_loss/len(dataloader.dataset)
+    val.append(val_loss)
+  
+  return val
+
+
+#Deep Learning(decode)
+def train_decode_model_mixup(dlt, dlv, model, lossfunc, \
+    optimizer, epochs, device, mixalpha = 1.0, scheduler = None):
+    t1=time.time()
+    train_loss_list=[]
+    val_loss_list=[]
+
+    for epoch in range(epochs):
+        model.train()
+        for dat_train in dlt:
+            inputs, origin = dat_train
+            inputs, origin = inputs.to(device), origin.to(device)
+            # inputs, origin = Variable(inputs), Variable(origin)
+            inputs, laba, labb, mixlamda = mixup_data(inputs, origin, device, mixalpha)
+            inputs, laba, labb = Variable(inputs), Variable(laba), Variable(labb)
+
+            optimizer.zero_grad()
+            outputs = model(inputs)
+
+            # loss = lossfunc(outputs, origin)
+            loss_mix_func = mixup_criterion(laba, labb, mixlamda)
+            loss = loss_mix_func(lossfunc, outputs)
+            loss.backward()
+            optimizer.step()
+        
+        if(scheduler != None):
+            scheduler.step()
+
+        val_val = val_decode_model(dlv, model, device, lossfunc)
+        val_train = val_decode_model(dlt, model, device, lossfunc)
+        train_loss_list.append(val_train[0])
+        val_loss_list.append(val_val[0])
+        t2=time.time()
+        caltime=(t2-t1)/60
+        print(f'エポック{epoch+1}--------------------------------')
+        print(f'epochtime:{caltime:.4f}分, train_loss:{val_train[0]*1000:.4f}, val_loss:{val_val[0]*1000:.4f}')
+        t1=time.time()
+
+    return train_loss_list, val_loss_list
+
+
+
+#Deep Learning(decode)
+def train_decode_model_ver2(dlt, dlv, model, lossfunc, \
+    optimizer, epochs, device, scheduler = None, \
+        gausnoise = False, stddev = 0.01):
+    """
+    transfer displaying learning_curv from this function.
+    """
+    t1=time.time()
+    train_loss_list=[]
+    val_loss_list=[]
+
+    #ガウシアンノイズ付与レイヤを定義
+    if (gausnoise):
+        gn = GaussianNoise(stddev, device)
+
+
+    for epoch in range(epochs):
+        model.train()
+        for dat_train in dlt:
+            inputs, origin = dat_train
+            inputs, origin = inputs.to(device), origin.to(device)
+            inputs, origin = Variable(inputs), Variable(origin)
+
+            #ガウシアンノイズを付与
+            if (gausnoise):
+                inputs = gn(inputs)
+
+            optimizer.zero_grad()
+            outputs = model(inputs)
+            loss = lossfunc(outputs, origin)
+            loss.backward()
+            optimizer.step()
+
+        
+        if(scheduler != None):
+            scheduler.step()
+
+        val_val = val_decode_model(dlv, model, device, lossfunc)
+        val_train = val_decode_model(dlt, model, device, lossfunc)
+        train_loss_list.append(val_train[0])
+        val_loss_list.append(val_val[0])
+        t2=time.time()
+        caltime=(t2-t1)/60
+        print(f'エポック{epoch+1}--------------------------------')
+        print(f'epochtime:{caltime:.4f}分, train_loss:{val_train[0]*1000:.4f}, val_loss:{val_val[0]*1000:.4f}')
+        t1=time.time()
+
+    return train_loss_list, val_loss_list
+
+
+
+
+
+#convert tensor into numpy
+def tensor_to_numpy(input_tensor, normTrue):
+  output_numpy = input_tensor.to('cpu').detach().numpy().copy()
+  if normTrue:
+    output_numpy *= 255
+  output_numpy = np.round(output_numpy)
+  output_numpy = np.clip(output_numpy, a_min = 0, a_max = 255)
+  output_numpy = output_numpy.astype(np.uint8)
+  return output_numpy
+
+#test a decode model and check a output-image
+def test_decode_model_and_check_img_ver3(dataloader, img_width, img_height, model, device, figwidth, figheighgt, from_num, to_num, save_dir_path, \
+  label_array = None, datanorm = False, correctimgnorm = False):
+  """
+  In addition to ver2, you can decide number of print-image.
+  And calculate PSNR, display label_number.
+  from_num>=1 : int
+  to_num>=from_num : int
+  label_array : you must prepare list or array corresponding to dataloader.
+  """
+  import numpy as np
+  import cv2
+  model.eval()
+  img_num = 1
+  psnrs = []
+  with torch.no_grad():
+    for inputs, origin in dataloader:
+      inputs, origin = inputs.to(device), origin.to(device)
+      origin_imgs = origin
+      inputs, origin = Variable(inputs), Variable(origin)
+      outputs = model(inputs)
+      for i in range(len(outputs)):
+        output_img_array = tensor_to_numpy(outputs[i], datanorm)
+        output_img_array = np.resize(output_img_array,(img_height,img_width))
+
+        origin_img_array = tensor_to_numpy(origin_imgs[i], correctimgnorm)
+        origin_img_array = np.resize(origin_img_array,(img_height,img_width))
+
+        psnr = cv2.PSNR(output_img_array, origin_img_array)
+        psnrs.append(psnr)
+
+        if from_num <= img_num and img_num <= to_num:
+            plt.rcParams["figure.figsize"] = (figwidth, figheighgt)
+            fig = plt.figure()
+
+            if label_array is None:
+                plt.title('title')
+            else :
+                plt.title(label_array[img_num - 1])
+            plt.subplot(1,2,1)
+            plt.imshow(output_img_array)
+            plt.gray()
+            plt.subplot(1,2,2)
+            plt.imshow(origin_img_array)
+            plt.gray()
+            plt.show()
+            fig.savefig(save_dir_path+ '/' + str(i) +'.jpg')
+
+        img_num += 1
+  return psnrs
+
+
+
+if __name__=='__main__':
+    print('Functions related Deep Learning ')
 
 
 #テンソルを分割、標準化、正規化、データセット化
@@ -236,461 +738,6 @@ def normalize_dataset(dataset, mean_list = None, std_list = None, imaging_cf = F
 
 
 
-
-
-#Create and save confusion-matrix
-def create_cfmat(labels,predictions,matrix_save_path,vmax,figsy,figsx,fontsize):
-  import seaborn as sns
-  from sklearn.metrics import confusion_matrix
-
-  _, ax = plt.subplots(figsize = (figsy, figsx))
-  #plt.rcParams["font.size"] = fontsize
-
-  cm = confusion_matrix(labels,predictions)
-  sns.heatmap(cm,square=True,cmap='Blues',annot=True,fmt='d',ax=ax,vmax=vmax,vmin=0,annot_kws={"size":fontsize})
-  
-  plt.savefig(matrix_save_path)
-
-
-
-
-
-#Displaying learning-curv_ver2
-def learning_curv_ver2( fig_w, fig_h, labelfontsize, scalefontsize, tls = None, vls = None, tas = None, vas = None):
-  """
-  you must prepare vls.
-  """
-  rcparams_dic = {
-    'figure.figsize': (fig_w,fig_h),
-    'axes.labelsize': labelfontsize,
-    'xtick.labelsize': scalefontsize,
-    'ytick.labelsize': scalefontsize,
-  }
-  plt.rcParams.update(rcparams_dic)
-
-  #正解率の配列を持っている場合
-  if (tas != None) or (vas != None):
-    plt.subplots_adjust(wspace=0.4, hspace=0.6)
-    plt.subplot(1,2,1)
-  
-  if tls != None:
-    plt.plot(range(1, 1 + len(tls)), tls, label="training")
-  plt.plot(range(1, 1 + len(vls)), vls, label="validation")
-  plt.xlabel('Epochs')
-  plt.ylabel('Loss')
-  plt.legend()
-
-  if (vas != None) or (tas != None):
-    plt.subplot(1,2,2)
-    if tas != None:
-      plt.plot(range(1, 1 + len(tas)), tas, label="training")
-    plt.plot(range(1, 1 + len(vas)), vas, label="validation")
-    plt.xlabel('Epochs')
-    plt.ylabel('Acc')
-    plt.legend()
-
-  plt.show()
-
-#Displaying learning-curv
-def learning_curv(acc_cf, valloss, valacc, train_cf, trainloss, trainacc, fig_w, fig_h, labelfontsize, scalefontsize):
-  
-  rcparams_dic = {
-    'figure.figsize': (fig_w,fig_h),
-    'axes.labelsize': labelfontsize,
-    'xtick.labelsize': scalefontsize,
-    'ytick.labelsize': scalefontsize,
-  }
-  plt.rcParams.update(rcparams_dic)
-
-
-  if acc_cf == True:
-    plt.subplots_adjust(wspace=0.4, hspace=0.6)
-    plt.subplot(1,2,1)
-  
-  if train_cf == True:
-    plt.plot(range(1, 1 + len(trainloss)), trainloss, label="training")
-  plt.plot(range(1, 1 + len(valloss)), valloss, label="validation")
-  plt.xlabel('Epochs')
-  plt.ylabel('Loss')
-  plt.legend()
-
-  if acc_cf == True:
-    plt.subplot(1,2,2)
-    if train_cf == True:
-      plt.plot(range(1, 1 + len(trainloss)), trainacc, label="training")
-    plt.plot(range(1, 1 + len(trainloss)), valacc, label="validation")
-    plt.xlabel('Epochs')
-    plt.ylabel('Acc')
-    plt.legend()
-
-  plt.show()
-
-
-
-
-
-
-
-
-#正則化関数
-#L1正則化
-def L1norm(model, alpha, loss):
-  l1 = torch.tensor(0., requires_grad=True)
-  for w in model.parameters():
-    #重みの大きさの総和
-    l1 = l1 + torch.norm(w, 1)
-  loss = loss + alpha*l1
-  return loss
-
-#L2正則化
-def L2norm(model, lamda, loss):
-  l2 = torch.tensor(0., requires_grad=True)
-  for w in model.parameters():
-    #重みの大きさの2乗和
-    l2 = l2 + torch.norm(w)**2
-  loss = loss + lamda*l2/2
-  return loss
-
-
-
-
-
-
-
-#Deep Learning validation(image classification)
-def val_model(dataloader, model, device, lossfunc, predict_label_list_true):
-    model.eval()
-    correct = 0
-    total = 0
-    val_loss = 0
-    val = []
-
-    if (predict_label_list_true == True):
-        predict_list = []
-        label_list = []
-  
-    with torch.no_grad():
-        for inputs, labels in dataloader:
-            inputs, labels = inputs.to(device), labels.to(device)
-            inputs, labels = Variable(inputs), Variable(labels)
-            outputs = model(inputs)
-            loss = lossfunc(outputs, labels)
-            val_loss += loss.item()
-            #_, predicted = torch.max(outputs.data, 1)
-            predicted = torch.argmax(outputs.data, 1)
-            total += labels.size(0)
-            correct += (predicted == labels).sum().item()
-
-            if (predict_label_list_true == True):
-                for i in range(len(predicted)):
-                    tmp = int(predicted[i])
-                    predict_list.append(tmp)
-                for i in range(len(labels)):
-                    tmp = int(labels[i])
-                    label_list.append(tmp)
-
-        acc = float(correct)/total
-        val_loss = val_loss/len(dataloader.dataset)
-        val.append(acc)
-        val.append(val_loss)
-
-        if (predict_label_list_true == True):
-            val.append(predict_list)
-            val.append(label_list)
-
-    return val
-
-#Deep Learning(image classification)
-#MIXUP
-def train_model_mixup(dataloader_train, dataloader_val, model, lossfunc, optimizer, epochs, device, \
-    L1 = False, alpha = None, L2 = False, lamda = None, mixalpha = 1.0, scheduler = None):
-    t1=time.time()
-    train_loss_list = []
-    val_loss_list = []
-    train_acc_list = []
-    val_acc_list = []
-
-    for epoch in range(epochs):
-        model.train()
-        for dat_train in dataloader_train:
-            inputs, labels = dat_train
-            inputs, labels = inputs.to(device), labels.to(device)
-            
-            #mixup
-            inputs, laba, labb, mixlamda = mixup_data(inputs, labels, device, mixalpha)
-
-            #inputs, labels = Variable(inputs), Variable(labels)
-            
-            inputs, laba, labb = Variable(inputs),  Variable(laba), Variable(labb)
-            optimizer.zero_grad()
-            outputs = model(inputs)
-            #loss = lossfunc(outputs, labels)
-            
-            loss_mix_func = mixup_criterion(laba, labb, mixlamda)
-            loss = loss_mix_func(lossfunc, outputs)
-
-            #正則化(weight decay)
-            if L2:
-                loss = L2norm(model, lamda, loss)
-            elif L1:
-                loss = L1norm(model, alpha, loss)
-
-
-            loss.backward()
-            optimizer.step()
-        
-        if(scheduler != None):
-            scheduler.step()
-
-        val_val = val_model(dataloader_val, model, device, lossfunc, False)
-        val_train = val_model(dataloader_train, model, device, lossfunc, False)
-        train_loss_list.append(val_train[1])
-        val_loss_list.append(val_val[1])
-        train_acc_list.append(val_train[0])
-        val_acc_list.append(val_val[0])
-
-        print(f'エポック{epoch+1}------------------------------')
-        print(f'val_acc{val_val[0]:.4f} ,train_acc{val_train[0]:.4f}')
-        t2=time.time()
-        caltime=(t2-t1)/60
-        print(f'epochtime:{caltime:.4f}分')
-        t1=time.time()
-
-    return train_loss_list, val_loss_list, train_acc_list, val_acc_list
-
-
-
-
-#Deep Learning(image classification)
-def train_model_ver3(dataloader_train, dataloader_val, model, lossfunc, optimizer, epochs, device, \
-    L1 = False, alpha = None, L2 = False, lamda = None, scheduler = None):
-    """
-    transfer displaying learning_curv from this function.
-    select weight decay option
-    L1 : bool
-    L2 : bool
-    alpha and lamda are parameter
-    """
-    t1=time.time()
-    train_loss_list = []
-    val_loss_list = []
-    train_acc_list = []
-    val_acc_list = []
-    for epoch in range(epochs):
-        model.train()
-        for dat_train in dataloader_train:
-            inputs, labels = dat_train
-            inputs, labels = inputs.to(device), labels.to(device)
-            inputs, labels = Variable(inputs), Variable(labels)
-            optimizer.zero_grad()
-            outputs = model(inputs)
-            loss = lossfunc(outputs, labels)
-
-            #正則化(weight decay)
-            if L2:
-                loss = L2norm(model, lamda, loss)
-            elif L1:
-                loss = L1norm(model, alpha, loss)
-
-
-            loss.backward()
-            optimizer.step()
-
-        if(scheduler != None):
-            scheduler.step()
-
-        val_val = val_model(dataloader_val, model, device, lossfunc, False)
-        val_train = val_model(dataloader_train, model, device, lossfunc, False)
-        train_loss_list.append(val_train[1])
-        val_loss_list.append(val_val[1])
-        train_acc_list.append(val_train[0])
-        val_acc_list.append(val_val[0])
-
-        print(f'エポック{epoch+1}------------------------------')
-        print(f'val_acc{val_val[0]:.4f} ,train_acc{val_train[0]:.4f}')
-        t2=time.time()
-        caltime=(t2-t1)/60
-        print(f'epochtime:{caltime:.4f}分')
-        t1=time.time()
-
-    return train_loss_list, val_loss_list, train_acc_list, val_acc_list
-
-
-
-
-
-
-
-
-#Deep Learning validation(decode)
-def val_decode_model(dataloader, model, device, lossfunc):
-  model.eval()
-  val_loss = 0
-  val = []
-  
-  with torch.no_grad():
-    for inputs, origin in dataloader:
-      inputs, origin = inputs.to(device), origin.to(device)
-      inputs, origin = Variable(inputs), Variable(origin)
-      outputs = model(inputs)
-      loss = lossfunc(outputs, origin)
-      val_loss += loss.item()
-
-    
-    val_loss = val_loss/len(dataloader.dataset)
-    val.append(val_loss)
-  
-  return val
-
-
-#Deep Learning(decode)
-def train_decode_model_mixup(dataloader_train, dataloader_val, model, lossfunc, \
-    optimizer, epochs, device, mixalpha = 1.0, scheduler = None):
-    t1=time.time()
-    train_loss_list=[]
-    val_loss_list=[]
-
-    for epoch in range(epochs):
-        model.train()
-        for dat_train in dataloader_train:
-            inputs, origin = dat_train
-            inputs, origin = inputs.to(device), origin.to(device)
-            # inputs, origin = Variable(inputs), Variable(origin)
-            inputs, laba, labb, mixlamda = mixup_data(inputs, origin, device, mixalpha)
-            inputs, laba, labb = Variable(inputs), Variable(laba), Variable(labb)
-
-            optimizer.zero_grad()
-            outputs = model(inputs)
-
-            # loss = lossfunc(outputs, origin)
-            loss_mix_func = mixup_criterion(laba, labb, mixlamda)
-            loss = loss_mix_func(lossfunc, outputs)
-            loss.backward()
-            optimizer.step()
-        
-        if(scheduler != None):
-            scheduler.step()
-
-        val_val = val_decode_model(dataloader_val, model, device, lossfunc)
-        val_train = val_decode_model(dataloader_train, model, device, lossfunc)
-        train_loss_list.append(val_train[0])
-        val_loss_list.append(val_val[0])
-        t2=time.time()
-        caltime=(t2-t1)/60
-        print(f'エポック{epoch+1}--------------------------------')
-        print(f'epochtime:{caltime:.4f}分, train_loss:{val_train[0]*1000:.4f}, val_loss:{val_val[0]*1000:.4f}')
-        t1=time.time()
-
-    return train_loss_list, val_loss_list
-
-
-
-#Deep Learning(decode)
-def train_decode_model_ver2(dataloader_train, dataloader_val, model, lossfunc, \
-    optimizer, epochs, device, scheduler = None):
-    """
-    transfer displaying learning_curv from this function.
-    """
-    t1=time.time()
-    train_loss_list=[]
-    val_loss_list=[]
-
-    for epoch in range(epochs):
-        model.train()
-        for dat_train in dataloader_train:
-            inputs, origin = dat_train
-            inputs, origin = inputs.to(device), origin.to(device)
-            inputs, origin = Variable(inputs), Variable(origin)
-            optimizer.zero_grad()
-            outputs = model(inputs)
-            loss = lossfunc(outputs, origin)
-            loss.backward()
-            optimizer.step()
-
-        if(scheduler != None):
-            scheduler.step()
-
-        val_val = val_decode_model(dataloader_val, model, device, lossfunc)
-        val_train = val_decode_model(dataloader_train, model, device, lossfunc)
-        train_loss_list.append(val_train[0])
-        val_loss_list.append(val_val[0])
-        t2=time.time()
-        caltime=(t2-t1)/60
-        print(f'エポック{epoch+1}--------------------------------')
-        print(f'epochtime:{caltime:.4f}分, train_loss:{val_train[0]*1000:.4f}, val_loss:{val_val[0]*1000:.4f}')
-        t1=time.time()
-
-    return train_loss_list, val_loss_list
-
-
-
-
-
-#convert tensor into numpy
-def tensor_to_numpy(input_tensor, normTrue):
-  output_numpy = input_tensor.to('cpu').detach().numpy().copy()
-  if normTrue:
-    output_numpy *= 255
-  output_numpy = np.round(output_numpy)
-  output_numpy = np.clip(output_numpy, a_min = 0, a_max = 255)
-  output_numpy = output_numpy.astype(np.uint8)
-  return output_numpy
-
-#test a decode model and check a output-image
-def test_decode_model_and_check_img_ver3(dataloader, img_width, img_height, model, device, figwidth, figheighgt, from_num, to_num, save_dir_path, \
-  label_array = None, datanorm = False, correctimgnorm = False):
-  """
-  In addition to ver2, you can decide number of print-image.
-  And calculate PSNR, display label_number.
-  from_num>=1 : int
-  to_num>=from_num : int
-  label_array : you must prepare list or array corresponding to dataloader.
-  """
-  import numpy as np
-  import cv2
-  model.eval()
-  img_num = 1
-  psnrs = []
-  with torch.no_grad():
-    for inputs, origin in dataloader:
-      inputs, origin = inputs.to(device), origin.to(device)
-      origin_imgs = origin
-      inputs, origin = Variable(inputs), Variable(origin)
-      outputs = model(inputs)
-      for i in range(len(outputs)):
-        output_img_array = tensor_to_numpy(outputs[i], datanorm)
-        output_img_array = np.resize(output_img_array,(img_height,img_width))
-
-        origin_img_array = tensor_to_numpy(origin_imgs[i], correctimgnorm)
-        origin_img_array = np.resize(origin_img_array,(img_height,img_width))
-
-        psnr = cv2.PSNR(output_img_array, origin_img_array)
-        psnrs.append(psnr)
-
-        if from_num <= img_num and img_num <= to_num:
-            plt.rcParams["figure.figsize"] = (figwidth, figheighgt)
-            fig = plt.figure()
-
-            if label_array is None:
-                plt.title('title')
-            else :
-                plt.title(label_array[img_num - 1])
-            plt.subplot(1,2,1)
-            plt.imshow(output_img_array)
-            plt.gray()
-            plt.subplot(1,2,2)
-            plt.imshow(origin_img_array)
-            plt.gray()
-            plt.show()
-            fig.savefig(save_dir_path+ '/' + str(i) +'.jpg')
-
-        img_num += 1
-  return psnrs
-
-
-
-if __name__=='__main__':
-    print('Functions related Deep Learning ')
 
 # #test a decode model and check a output-image
 # def test_decode_model_and_check_img_ver2(dataloader, img_width, img_height,model, device, figwidth, figheighgt):

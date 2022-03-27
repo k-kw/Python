@@ -5,218 +5,6 @@ torch.manual_seed(0)
 
 import torch.nn as nn
 
-
-#nonsim
-class in_ver5(nn.Module):
-    def __init__(self,classes):
-        super().__init__()
-        self.CNN1 = nn.Sequential(
-            nn.Conv2d(1, 32, kernel_size=16),
-            nn.BatchNorm2d(32),
-            nn.ReLU(),
-            nn.MaxPool2d(2))
-        self.CNN2 = nn.Sequential(
-            nn.Conv2d(32, 64, kernel_size=4),
-            nn.BatchNorm2d(64),
-            nn.ReLU(),
-            nn.MaxPool2d(2))
-        self.CNN3 = nn.Sequential(
-            nn.Conv2d(64, 32, kernel_size=4),
-            nn.BatchNorm2d(32),
-            nn.ReLU(),
-            nn.MaxPool2d(2))
-        self.CNN4 = nn.Sequential(
-            nn.Conv2d(32, 16, kernel_size=4),
-            nn.BatchNorm2d(16),
-            nn.ReLU(),
-            nn.MaxPool2d(2))
-        self.dropout = nn.Dropout(0.1)
-        self.l1 = nn.Linear(16 * 12 * 12, 1024)
-        self.l2 = nn.Linear(2048, 1024)
-        self.l3 = nn.Linear(1024, 512)
-        self.l4 = nn.Linear(512, 128)
-        self.fc = nn.Linear(128, classes)
-        self.relu = nn.ReLU()
-
-    def forward(self, x):
-        x = self.CNN1(x)
-        x = self.CNN2(x)
-        x = self.CNN3(x)
-        x = self.CNN4(x)
-        x = x.view(x.size(0), -1)
-        x = self.l1(x)
-        x = self.relu(x)
-        x = self.dropout(x)
-        # x = self.l2(x)
-        # x = self.relu(x)
-        # x = self.dropout(x)
-        x = self.l3(x)
-        x = self.relu(x)
-        x = self.dropout(x)
-        x = self.l4(x)
-        x = self.relu(x)
-        x = self.fc(x)
-        return F.log_softmax(x, dim=1)
-
-class mnist_net(nn.Module):
-    def __init__(self,classes):
-        super().__init__()
-        self.CNN1 = nn.Sequential(
-            nn.Conv2d(1, 32, kernel_size=4),
-            nn.BatchNorm2d(32),
-            nn.ReLU(),
-            nn.MaxPool2d(2))
-        self.CNN2 = nn.Sequential(
-            nn.Conv2d(32, 16, kernel_size=4),
-            nn.BatchNorm2d(16),
-            nn.ReLU(),
-            nn.MaxPool2d(2))
-  
-        self.dropout = nn.Dropout(0.1)
-        self.l1 = nn.Linear(58 * 58 * 64, 1024)
-        self.l2 = nn.Linear(2048, 1024)
-        self.l3 = nn.Linear(1024, 512)
-        self.l4 = nn.Linear(512, 128)
-        self.l5 = nn.Linear(16*4*4, 128)
-        self.l6 = nn.Linear(128,64)
-        self.l7 = nn.Linear(64,32)
-        self.fc = nn.Linear(32, classes)
-        self.relu = nn.ReLU()
-
-    def forward(self, x):
-        x = self.CNN1(x)
-        x = self.CNN2(x)
-        x = x.view(x.size(0), -1)
-        x = self.l5(x)
-        x = self.relu(x)
-        x = self.dropout(x)
-        x = self.l6(x)
-        x = self.relu(x)
-        x = self.dropout(x)
-        x = self.l7(x)
-        x = self.relu(x)
-        x = self.fc(x)
-        return F.log_softmax(x, dim=1)
-
-class cifar_net_g(nn.Module):
-    def __init__(self,classes):
-        super().__init__()
-        self.CNN1 = nn.Sequential(
-            nn.Conv2d(1, 128, kernel_size=3),
-            nn.BatchNorm2d(128),
-            nn.ReLU(),
-            # nn.MaxPool2d(2)
-            )
-        self.CNN2 = nn.Sequential(
-            nn.Conv2d(128, 64, kernel_size=3),
-            nn.BatchNorm2d(64),
-            nn.ReLU(),
-            # nn.MaxPool2d(2)
-            )
-        self.CNN3 = nn.Sequential(
-            nn.Conv2d(64, 32, kernel_size=3),
-            nn.BatchNorm2d(32),
-            nn.ReLU(),
-            nn.MaxPool2d(2)
-            )
-        self.CNN4 = nn.Sequential(
-            nn.Conv2d(32, 16, kernel_size=3),
-            nn.BatchNorm2d(16),
-            nn.ReLU(),
-            nn.MaxPool2d(2)
-            )
-        self.dropout = nn.Dropout(0.1)
-        self.l1 = nn.Linear(58 * 58 * 64, 1024)
-        self.l2 = nn.Linear(2048, 1024)
-        self.l3 = nn.Linear(1024, 512)
-        self.l4 = nn.Linear(512, 128)
-        self.l5 = nn.Linear(16*5*5, 128)
-        self.l6 = nn.Linear(128,64)
-        self.l7 = nn.Linear(64,32)
-        self.l8 = nn.Linear(128,128)
-        self.fc = nn.Linear(128, classes)
-        self.relu = nn.ReLU()
-
-    def forward(self, x):
-        x = self.CNN1(x)
-        x = self.CNN2(x)
-        x = self.CNN3(x)
-        x = self.CNN4(x)
-        x = x.view(x.size(0), -1)
-        x = self.l5(x)
-        x = self.relu(x)
-        x = self.dropout(x)
-        x = self.l8(x)
-        x = self.relu(x)
-        x = self.dropout(x)
-        x = self.l8(x)
-        x = self.relu(x)
-        x = self.dropout(x)
-        x = self.l8(x)
-        x = self.relu(x)
-        x = self.fc(x)
-        return F.log_softmax(x, dim=1)
-
-class cifar_net_c(nn.Module):
-    def __init__(self,classes):
-        super().__init__()
-        self.CNN1 = nn.Sequential(
-            nn.Conv2d(3, 128, kernel_size=3),
-            nn.BatchNorm2d(128),
-            nn.ReLU(),
-            # nn.MaxPool2d(2)
-            )
-        self.CNN2 = nn.Sequential(
-            nn.Conv2d(128, 64, kernel_size=3),
-            nn.BatchNorm2d(64),
-            nn.ReLU(),
-            # nn.MaxPool2d(2)
-            )
-        self.CNN3 = nn.Sequential(
-            nn.Conv2d(64, 32, kernel_size=3),
-            nn.BatchNorm2d(32),
-            nn.ReLU(),
-            nn.MaxPool2d(2)
-            )
-        self.CNN4 = nn.Sequential(
-            nn.Conv2d(32, 16, kernel_size=3),
-            nn.BatchNorm2d(16),
-            nn.ReLU(),
-            nn.MaxPool2d(2)
-            )
-        self.dropout = nn.Dropout(0.1)
-        self.l1 = nn.Linear(58 * 58 * 64, 1024)
-        self.l2 = nn.Linear(2048, 1024)
-        self.l3 = nn.Linear(1024, 512)
-        self.l4 = nn.Linear(512, 128)
-        self.l5 = nn.Linear(16*5*5, 128)
-        self.l6 = nn.Linear(128,64)
-        self.l7 = nn.Linear(64,32)
-        self.l8 = nn.Linear(128,128)
-        self.fc = nn.Linear(128, classes)
-        self.relu = nn.ReLU()
-
-    def forward(self, x):
-        x = self.CNN1(x)
-        x = self.CNN2(x)
-        x = self.CNN3(x)
-        x = self.CNN4(x)
-        x = x.view(x.size(0), -1)
-        x = self.l5(x)
-        x = self.relu(x)
-        x = self.dropout(x)
-        x = self.l8(x)
-        x = self.relu(x)
-        x = self.dropout(x)
-        x = self.l8(x)
-        x = self.relu(x)
-        x = self.dropout(x)
-        x = self.l8(x)
-        x = self.relu(x)
-        x = self.fc(x)
-        return F.log_softmax(x, dim=1)
-
-
 #sim
 #decode_model
 
@@ -949,6 +737,217 @@ class simnet_linear_allsize(nn.Module):
 
 
 
+
+
+#nonsim
+class in_ver5(nn.Module):
+    def __init__(self,classes):
+        super().__init__()
+        self.CNN1 = nn.Sequential(
+            nn.Conv2d(1, 32, kernel_size=16),
+            nn.BatchNorm2d(32),
+            nn.ReLU(),
+            nn.MaxPool2d(2))
+        self.CNN2 = nn.Sequential(
+            nn.Conv2d(32, 64, kernel_size=4),
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+            nn.MaxPool2d(2))
+        self.CNN3 = nn.Sequential(
+            nn.Conv2d(64, 32, kernel_size=4),
+            nn.BatchNorm2d(32),
+            nn.ReLU(),
+            nn.MaxPool2d(2))
+        self.CNN4 = nn.Sequential(
+            nn.Conv2d(32, 16, kernel_size=4),
+            nn.BatchNorm2d(16),
+            nn.ReLU(),
+            nn.MaxPool2d(2))
+        self.dropout = nn.Dropout(0.1)
+        self.l1 = nn.Linear(16 * 12 * 12, 1024)
+        self.l2 = nn.Linear(2048, 1024)
+        self.l3 = nn.Linear(1024, 512)
+        self.l4 = nn.Linear(512, 128)
+        self.fc = nn.Linear(128, classes)
+        self.relu = nn.ReLU()
+
+    def forward(self, x):
+        x = self.CNN1(x)
+        x = self.CNN2(x)
+        x = self.CNN3(x)
+        x = self.CNN4(x)
+        x = x.view(x.size(0), -1)
+        x = self.l1(x)
+        x = self.relu(x)
+        x = self.dropout(x)
+        # x = self.l2(x)
+        # x = self.relu(x)
+        # x = self.dropout(x)
+        x = self.l3(x)
+        x = self.relu(x)
+        x = self.dropout(x)
+        x = self.l4(x)
+        x = self.relu(x)
+        x = self.fc(x)
+        return F.log_softmax(x, dim=1)
+
+class mnist_net(nn.Module):
+    def __init__(self,classes):
+        super().__init__()
+        self.CNN1 = nn.Sequential(
+            nn.Conv2d(1, 32, kernel_size=4),
+            nn.BatchNorm2d(32),
+            nn.ReLU(),
+            nn.MaxPool2d(2))
+        self.CNN2 = nn.Sequential(
+            nn.Conv2d(32, 16, kernel_size=4),
+            nn.BatchNorm2d(16),
+            nn.ReLU(),
+            nn.MaxPool2d(2))
+  
+        self.dropout = nn.Dropout(0.1)
+        self.l1 = nn.Linear(58 * 58 * 64, 1024)
+        self.l2 = nn.Linear(2048, 1024)
+        self.l3 = nn.Linear(1024, 512)
+        self.l4 = nn.Linear(512, 128)
+        self.l5 = nn.Linear(16*4*4, 128)
+        self.l6 = nn.Linear(128,64)
+        self.l7 = nn.Linear(64,32)
+        self.fc = nn.Linear(32, classes)
+        self.relu = nn.ReLU()
+
+    def forward(self, x):
+        x = self.CNN1(x)
+        x = self.CNN2(x)
+        x = x.view(x.size(0), -1)
+        x = self.l5(x)
+        x = self.relu(x)
+        x = self.dropout(x)
+        x = self.l6(x)
+        x = self.relu(x)
+        x = self.dropout(x)
+        x = self.l7(x)
+        x = self.relu(x)
+        x = self.fc(x)
+        return F.log_softmax(x, dim=1)
+
+class cifar_net_g(nn.Module):
+    def __init__(self,classes):
+        super().__init__()
+        self.CNN1 = nn.Sequential(
+            nn.Conv2d(1, 128, kernel_size=3),
+            nn.BatchNorm2d(128),
+            nn.ReLU(),
+            # nn.MaxPool2d(2)
+            )
+        self.CNN2 = nn.Sequential(
+            nn.Conv2d(128, 64, kernel_size=3),
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+            # nn.MaxPool2d(2)
+            )
+        self.CNN3 = nn.Sequential(
+            nn.Conv2d(64, 32, kernel_size=3),
+            nn.BatchNorm2d(32),
+            nn.ReLU(),
+            nn.MaxPool2d(2)
+            )
+        self.CNN4 = nn.Sequential(
+            nn.Conv2d(32, 16, kernel_size=3),
+            nn.BatchNorm2d(16),
+            nn.ReLU(),
+            nn.MaxPool2d(2)
+            )
+        self.dropout = nn.Dropout(0.1)
+        self.l1 = nn.Linear(58 * 58 * 64, 1024)
+        self.l2 = nn.Linear(2048, 1024)
+        self.l3 = nn.Linear(1024, 512)
+        self.l4 = nn.Linear(512, 128)
+        self.l5 = nn.Linear(16*5*5, 128)
+        self.l6 = nn.Linear(128,64)
+        self.l7 = nn.Linear(64,32)
+        self.l8 = nn.Linear(128,128)
+        self.fc = nn.Linear(128, classes)
+        self.relu = nn.ReLU()
+
+    def forward(self, x):
+        x = self.CNN1(x)
+        x = self.CNN2(x)
+        x = self.CNN3(x)
+        x = self.CNN4(x)
+        x = x.view(x.size(0), -1)
+        x = self.l5(x)
+        x = self.relu(x)
+        x = self.dropout(x)
+        x = self.l8(x)
+        x = self.relu(x)
+        x = self.dropout(x)
+        x = self.l8(x)
+        x = self.relu(x)
+        x = self.dropout(x)
+        x = self.l8(x)
+        x = self.relu(x)
+        x = self.fc(x)
+        return F.log_softmax(x, dim=1)
+
+class cifar_net_c(nn.Module):
+    def __init__(self,classes):
+        super().__init__()
+        self.CNN1 = nn.Sequential(
+            nn.Conv2d(3, 128, kernel_size=3),
+            nn.BatchNorm2d(128),
+            nn.ReLU(),
+            # nn.MaxPool2d(2)
+            )
+        self.CNN2 = nn.Sequential(
+            nn.Conv2d(128, 64, kernel_size=3),
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+            # nn.MaxPool2d(2)
+            )
+        self.CNN3 = nn.Sequential(
+            nn.Conv2d(64, 32, kernel_size=3),
+            nn.BatchNorm2d(32),
+            nn.ReLU(),
+            nn.MaxPool2d(2)
+            )
+        self.CNN4 = nn.Sequential(
+            nn.Conv2d(32, 16, kernel_size=3),
+            nn.BatchNorm2d(16),
+            nn.ReLU(),
+            nn.MaxPool2d(2)
+            )
+        self.dropout = nn.Dropout(0.1)
+        self.l1 = nn.Linear(58 * 58 * 64, 1024)
+        self.l2 = nn.Linear(2048, 1024)
+        self.l3 = nn.Linear(1024, 512)
+        self.l4 = nn.Linear(512, 128)
+        self.l5 = nn.Linear(16*5*5, 128)
+        self.l6 = nn.Linear(128,64)
+        self.l7 = nn.Linear(64,32)
+        self.l8 = nn.Linear(128,128)
+        self.fc = nn.Linear(128, classes)
+        self.relu = nn.ReLU()
+
+    def forward(self, x):
+        x = self.CNN1(x)
+        x = self.CNN2(x)
+        x = self.CNN3(x)
+        x = self.CNN4(x)
+        x = x.view(x.size(0), -1)
+        x = self.l5(x)
+        x = self.relu(x)
+        x = self.dropout(x)
+        x = self.l8(x)
+        x = self.relu(x)
+        x = self.dropout(x)
+        x = self.l8(x)
+        x = self.relu(x)
+        x = self.dropout(x)
+        x = self.l8(x)
+        x = self.relu(x)
+        x = self.fc(x)
+        return F.log_softmax(x, dim=1)
 
 
 
