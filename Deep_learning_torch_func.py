@@ -496,11 +496,9 @@ def tensor_to_numpy(input_tensor, normTrue):
 def test_decode_model_and_check_img_ver3(dataloader, img_width, img_height, model, device, figwidth, figheighgt, from_num, to_num, save_dir_path, \
   label_array = None, datanorm = False, correctimgnorm = False):
   """
-  In addition to ver2, you can decide number of print-image.
-  And calculate PSNR, display label_number.
-  from_num>=1 : int
-  to_num>=from_num : int
-  label_array : you must prepare list or array corresponding to dataloader.
+  datanorm: Bool 
+  正規化した復元画像を出力するよう訓練したモデルはTrue
+  画素値をそのまま出力するよう訓練したモデルはFalse
   """
   import numpy as np
   import cv2
@@ -510,14 +508,13 @@ def test_decode_model_and_check_img_ver3(dataloader, img_width, img_height, mode
   with torch.no_grad():
     for inputs, origin in dataloader:
       inputs, origin = inputs.to(device), origin.to(device)
-      origin_imgs = origin
-      inputs, origin = Variable(inputs), Variable(origin)
+      inputs = Variable(inputs)
       outputs = model(inputs)
       for i in range(len(outputs)):
         output_img_array = tensor_to_numpy(outputs[i], datanorm)
         output_img_array = np.resize(output_img_array,(img_height,img_width))
 
-        origin_img_array = tensor_to_numpy(origin_imgs[i], correctimgnorm)
+        origin_img_array = tensor_to_numpy(origin[i], correctimgnorm)
         origin_img_array = np.resize(origin_img_array,(img_height,img_width))
 
         psnr = cv2.PSNR(output_img_array, origin_img_array)
