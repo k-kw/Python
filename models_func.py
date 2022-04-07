@@ -3,10 +3,23 @@ import torch.nn as nn
 import torch.nn.functional as F
 torch.manual_seed(0)
 
-import torch.nn as nn
-
 #sim
 #decode_model
+
+class Convtp_Tanh(nn.Module):
+    def __init__(self, inc, outc, ks, strd, pad, outpad):
+        super().__init__()
+        self.Deconv = nn.Sequential(nn.ConvTranspose2d(in_channels = inc, out_channels = outc, 
+                                                   kernel_size = ks, stride = strd, padding = pad, output_padding = outpad),
+                                                   nn.Tanh(),
+                                                   )
+    
+    def forward(self, x):
+        x = self.Deconv(x)
+        return x
+
+
+
 
 class Convtp_Bn_ReLu(nn.Module):
   def __init__(self,input_channel,output_channel,kernel_size,stride,padding,output_padding):
@@ -148,7 +161,18 @@ class simnet_cnn1d(nn.Module):
 
 
 
-
+#sigmoid
+class Conv_Sigmoid(nn.Module):
+    def __init__(self, inc, outc, ks, strd, pad):
+        super().__init__()
+        self.CNN = nn.Sequential(
+            nn.Conv2d(inc, outc, ks, strd, pad),
+            nn.Sigmoid()
+            )
+    
+    def forward(self, x):
+        x = self.CNN(x)
+        return x
 
 
 #プーリング
@@ -241,6 +265,18 @@ class simnet_cnn_allsize_ver6(nn.Module):
 
 
 #LeakyReLU
+class Conv_Bn_LeakyReLU(nn.Module):
+    def __init__(self, inc, outc, ks, strd, pad, negslo):
+        super().__init__()
+        self.CNN = nn.Sequential(nn.Conv2d(inc, outc, ks, strd, pad),
+                             nn.BatchNorm2d(outc),
+                             nn.LeakyReLU(negative_slope = negslo),
+                             )
+    def forward(self, x):
+        x = self.CNN(x)
+        return x
+
+
 class Conv_Bn_LeakyReLu_He_weight(nn.Module):
   """
   LeakyReLU and He initialization
