@@ -20,6 +20,55 @@ class Convtp_Bn_ReLu(nn.Module):
     x = self.Deconv(x)
     return x
 
+
+
+class Convtp_Bn_Sigmoid(nn.Module):
+    def __init__(self, ic, oc, ks, strd, pad, outpad):
+        super().__init__()
+        self.Deconv = nn.Sequential(nn.ConvTranspose2d(in_channels = ic, out_channels = oc, kernel_size = ks, stride = strd, padding = pad, output_padding = outpad),
+                                    nn.BatchNorm2d(oc), 
+                                    nn.Sigmoid(),
+                                    )
+    def forward(self,x):
+        x = self.Deconv(x)
+        return x
+
+
+
+
+class decoder_outlayersigmoid(nn.Module):
+    def __init__(self, input_size, fc1out, firstw, firsth, kslist, strdlist, padlist, opadlist, iclist, oclist):
+        super().__init__()
+        self.fc1 = nn.Linear(input_size,fc1out)
+        self.relu = nn.ReLU()
+
+        self.Deconv_list = []
+        #最終層以外はConvtp_Bn_ReLu
+        for i in range(len(kslist) - 1):
+            self.Deconv_list.append(Convtp_Bn_ReLu(iclist[i],oclist[i],kslist[i],strdlist[i],
+                                             padlist[i],opadlist[i]))
+        #最終層はConvtp_Bn_Sigmoid
+        last = len(kslist) - 1
+        self.Deconv_list.append(Convtp_Bn_Sigmoid(iclist[last], oclist[last], kslist[last], strdlist[last],
+                                             padlist[last], opadlist[last]))
+
+
+        self.Deconvs = nn.Sequential(*self.Deconv_list)
+
+        self.first_width = firstw
+        self.first_height = firsth
+    
+
+    def forward(self, x):
+        x = self.fc1(x)
+        x = self.relu(x)
+        x = x.view(-1,1,self.first_width,self.first_height)
+        x = self.Deconvs(x)
+        return x
+
+
+
+
 class simnet_decoder_allsize(nn.Module):
   def __init__(self,input_size,fc1_out,first_width,first_height,kernel_size_list,stride_list,padding_list,outpadding_list,in_channel_list,out_channel_list):
     super().__init__()
@@ -30,9 +79,7 @@ class simnet_decoder_allsize(nn.Module):
       self.Deconv_list.append(Convtp_Bn_ReLu(in_channel_list[i],out_channel_list[i],kernel_size_list[i],stride_list[i],
                                              padding_list[i],outpadding_list[i]))
     
-    self.Deconvs = nn.Sequential(
-        *self.Deconv_list
-    )
+    self.Deconvs = nn.Sequential(*self.Deconv_list)
 
     self.first_width = first_width
     self.first_height = first_height
