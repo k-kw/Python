@@ -249,14 +249,10 @@ def train_model_mixup(dlt, dlv, model, lossfunc, optimizer, epochs, device, \
             inputs, labels = inputs.to(device), labels.to(device)
             
             #mixup
-            inputs, laba, labb, mixlamda = mixup_data(inputs, labels, device, mixalpha)
-
-            #inputs, labels = Variable(inputs), Variable(labels)
-            
+            inputs, laba, labb, mixlamda = mixup_data(inputs, labels, device, mixalpha)            
             inputs, laba, labb = Variable(inputs),  Variable(laba), Variable(labb)
             optimizer.zero_grad()
             outputs = model(inputs)
-            #loss = lossfunc(outputs, labels)
             
             loss_mix_func = mixup_criterion(laba, labb, mixlamda)
             loss = loss_mix_func(lossfunc, outputs)

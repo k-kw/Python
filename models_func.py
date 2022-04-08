@@ -115,6 +115,23 @@ class simnet_decoder_allsize(nn.Module):
 
 #classfication_model
 #one-dimensional
+
+#使ってない
+class Conv1d_Bn_Sigmoid_Pool(nn.Module):
+    def __init__(self, inc, outc, ks, pool):
+        super().__init__()
+        self.CNN1d = nn.Sequential(
+            nn.Conv1d(inc, outc, ks),
+            nn.BatchNorm1d(outc),
+            nn.Sigmoid(),
+            nn.MaxPool1d(pool)
+        
+        )
+    def forward(self, x):
+        x = self.CNN1d(x)
+        return x
+
+
 class Conv1d_Bn_ReLU_Pool(nn.Module):
     def __init__(self, inc, outc, ksize, pool):
         super().__init__()
@@ -128,6 +145,47 @@ class Conv1d_Bn_ReLU_Pool(nn.Module):
     def forward(self, x):
         x = self.CNN1d(x)
         return x
+
+#sigmoid BCEloss用モデル　学習関数に変更必要　保留中
+class cnn1d_sigmoidout(nn.Module):
+    """
+    chlistの長さだけ一つ長くする
+    BCELoss用にsigmoidで出力
+    """
+    def __init__(self, chlist, kslist, poollist, classes, drop, linear2_in):
+        super().__init__()
+        #CNNの層数
+        length = len(kslist)
+
+        CNNlist = []
+
+        for i in range(length):
+            CNNlist.append(Conv1d_Bn_ReLU_Pool(chlist[i], chlist[i + 1], kslist[i], poollist[i]))
+
+        self.CNNS = nn.Sequential(*CNNlist)
+
+        self.flat = nn.Flatten()
+
+        self.fc1 = nn.LazyLinear(linear2_in)
+        self.fc2 = nn.Linear(linear2_in, classes)
+        self.relu = nn.ReLU()
+        self.sigmoid = nn.Sigmoid()
+
+        self.drop = nn.Dropout(p = drop)
+
+    def forward(self, x):
+        x = self.CNNS(x)
+        x = self.flat(x)
+        x = self.drop(x)
+        x = self.fc1(x)
+        x = self.relu(x)
+        x = self.drop(x)
+        x = self.fc2(x)
+        x = self.sigmoid(x)
+        #BCELoss用
+        return x
+
+
 
 class simnet_cnn1d(nn.Module):
     def __init__(self, cnn_layer_num, inc, outc_list, ksize_list, pool_list, classes, drop, linear2_in):
@@ -157,9 +215,12 @@ class simnet_cnn1d(nn.Module):
         x = self.relu(x)
         x = self.drop(x)
         x = self.fc2(x)
+        #NLLLoss用
         return F.log_softmax(x, dim = 1)
 
 
+
+#two-dimensional
 
 #sigmoid
 class Conv_Sigmoid(nn.Module):
