@@ -88,74 +88,39 @@ def create_cfmat(labels,predictions,matrix_save_path,vmax,figsy,figsx,fontsize):
 
 #Displaying learning-curv_ver2
 def learning_curv_ver2( fig_w, fig_h, labelfontsize, scalefontsize, tls = None, vls = None, tas = None, vas = None):
-  """
-  you must prepare vls.
-  """
-  rcparams_dic = {
-    'figure.figsize': (fig_w,fig_h),
-    'axes.labelsize': labelfontsize,
-    'xtick.labelsize': scalefontsize,
-    'ytick.labelsize': scalefontsize,
-  }
-  plt.rcParams.update(rcparams_dic)
+    """
+    you must prepare vls.
+    """
+    rcparams_dic = {
+        'figure.figsize': (fig_w,fig_h),
+        'axes.labelsize': labelfontsize,
+        'xtick.labelsize': scalefontsize,
+        'ytick.labelsize': scalefontsize,
+    }
+    plt.rcParams.update(rcparams_dic)
 
-  #正解率の配列を持っている場合
-  if (tas != None) or (vas != None):
-    plt.subplots_adjust(wspace=0.4, hspace=0.6)
-    plt.subplot(1,2,1)
+    #正解率の配列を持っている場合
+    if (tas != None) or (vas != None):
+        plt.subplots_adjust(wspace=0.4, hspace=0.6)
+        plt.subplot(1,2,1)
   
-  if tls != None:
-    plt.plot(range(1, 1 + len(tls)), tls, label="training")
-  plt.plot(range(1, 1 + len(vls)), vls, label="validation")
-  plt.xlabel('Epochs')
-  plt.ylabel('Loss')
-  plt.legend()
-
-  if (vas != None) or (tas != None):
-    plt.subplot(1,2,2)
-    if tas != None:
-      plt.plot(range(1, 1 + len(tas)), tas, label="training")
-    plt.plot(range(1, 1 + len(vas)), vas, label="validation")
+    if tls != None:
+        plt.plot(range(1, 1 + len(tls)), tls, label="training")
+    plt.plot(range(1, 1 + len(vls)), vls, label="validation")
     plt.xlabel('Epochs')
-    plt.ylabel('Acc')
+    plt.ylabel('Loss')
     plt.legend()
 
-  plt.show()
+    if (vas != None) or (tas != None):
+        plt.subplot(1,2,2)
+        if tas != None:
+            plt.plot(range(1, 1 + len(tas)), tas, label="training")
+        plt.plot(range(1, 1 + len(vas)), vas, label="validation")
+        plt.xlabel('Epochs')
+        plt.ylabel('Acc')
+        plt.legend()
 
-#Displaying learning-curv
-def learning_curv(acc_cf, valloss, valacc, train_cf, trainloss, trainacc, fig_w, fig_h, labelfontsize, scalefontsize):
-  
-  rcparams_dic = {
-    'figure.figsize': (fig_w,fig_h),
-    'axes.labelsize': labelfontsize,
-    'xtick.labelsize': scalefontsize,
-    'ytick.labelsize': scalefontsize,
-  }
-  plt.rcParams.update(rcparams_dic)
-
-
-  if acc_cf == True:
-    plt.subplots_adjust(wspace=0.4, hspace=0.6)
-    plt.subplot(1,2,1)
-  
-  if train_cf == True:
-    plt.plot(range(1, 1 + len(trainloss)), trainloss, label="training")
-  plt.plot(range(1, 1 + len(valloss)), valloss, label="validation")
-  plt.xlabel('Epochs')
-  plt.ylabel('Loss')
-  plt.legend()
-
-  if acc_cf == True:
-    plt.subplot(1,2,2)
-    if train_cf == True:
-      plt.plot(range(1, 1 + len(trainloss)), trainacc, label="training")
-    plt.plot(range(1, 1 + len(trainloss)), valacc, label="validation")
-    plt.xlabel('Epochs')
-    plt.ylabel('Acc')
-    plt.legend()
-
-  plt.show()
-
+    plt.show()
 
 
 
@@ -166,21 +131,21 @@ def learning_curv(acc_cf, valloss, valacc, train_cf, trainloss, trainacc, fig_w,
 #正則化関数
 #L1正則化
 def L1norm(model, alpha, loss):
-  l1 = torch.tensor(0., requires_grad=True)
-  for w in model.parameters():
-    #重みの大きさの総和
-    l1 = l1 + torch.norm(w, 1)
-  loss = loss + alpha*l1
-  return loss
+    l1 = torch.tensor(0., requires_grad=True)
+    for w in model.parameters():
+        #重みの大きさの総和
+        l1 = l1 + torch.norm(w, 1)
+    loss = loss + alpha*l1
+    return loss
 
 #L2正則化
 def L2norm(model, lamda, loss):
-  l2 = torch.tensor(0., requires_grad=True)
-  for w in model.parameters():
-    #重みの大きさの2乗和
-    l2 = l2 + torch.norm(w)**2
-  loss = loss + lamda*l2/2
-  return loss
+    l2 = torch.tensor(0., requires_grad=True)
+    for w in model.parameters():
+        #重みの大きさの2乗和
+        l2 = l2 + torch.norm(w)**2
+    loss = loss + lamda*l2/2
+    return loss
 
 
 
@@ -540,6 +505,52 @@ def test_decode_model_and_check_img_ver3(dataloader, img_width, img_height, mode
 
 if __name__=='__main__':
     print('Functions related Deep Learning ')
+
+
+
+
+
+
+
+
+
+
+
+#Displaying learning-curv
+def learning_curv(acc_cf, valloss, valacc, train_cf, trainloss, trainacc, fig_w, fig_h, labelfontsize, scalefontsize):
+  
+  rcparams_dic = {
+    'figure.figsize': (fig_w,fig_h),
+    'axes.labelsize': labelfontsize,
+    'xtick.labelsize': scalefontsize,
+    'ytick.labelsize': scalefontsize,
+  }
+  plt.rcParams.update(rcparams_dic)
+
+
+  if acc_cf == True:
+    plt.subplots_adjust(wspace=0.4, hspace=0.6)
+    plt.subplot(1,2,1)
+  
+  if train_cf == True:
+    plt.plot(range(1, 1 + len(trainloss)), trainloss, label="training")
+  plt.plot(range(1, 1 + len(valloss)), valloss, label="validation")
+  plt.xlabel('Epochs')
+  plt.ylabel('Loss')
+  plt.legend()
+
+  if acc_cf == True:
+    plt.subplot(1,2,2)
+    if train_cf == True:
+      plt.plot(range(1, 1 + len(trainloss)), trainacc, label="training")
+    plt.plot(range(1, 1 + len(trainloss)), valacc, label="validation")
+    plt.xlabel('Epochs')
+    plt.ylabel('Acc')
+    plt.legend()
+
+  plt.show()
+
+
 
 
 #テンソルを分割、標準化、正規化、データセット化

@@ -66,8 +66,11 @@ class Discriminator(nn.Module):
         # ニューラルネットワークの構造を定義する
         conv_list = []
 
-        #最終層以外はLeakyReLU
-        for i in range(len(kslist) - 1):
+        #入力層はBnなし
+        conv_list.append(my_model.Conv_LeakyReLU(chlist[0], chlist[1], kslist[0], strdlist[0], padlist[0], ngsllist[0]))
+
+        #入力層と最終層以外はLeakyReLU
+        for i in range(1, len(kslist) - 1):
             conv_list.append(my_model.Conv_Bn_LeakyReLU(chlist[i], chlist[i + 1], 
                                                       kslist[i], strdlist[i],
                                                       padlist[i], ngsllist[i]

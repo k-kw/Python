@@ -3,8 +3,16 @@ import torch.nn as nn
 import torch.nn.functional as F
 torch.manual_seed(0)
 
+
+#重み初期化関数, model.apply(def)で使う
+
+
+
+
 #sim
 #decode_model
+
+#submodule
 
 class Convtp_Tanh(nn.Module):
     def __init__(self, inc, outc, ks, strd, pad, outpad):
@@ -17,8 +25,6 @@ class Convtp_Tanh(nn.Module):
     def forward(self, x):
         x = self.Deconv(x)
         return x
-
-
 
 
 class Convtp_Bn_ReLu(nn.Module):
@@ -34,7 +40,6 @@ class Convtp_Bn_ReLu(nn.Module):
     return x
 
 
-
 class Convtp_Bn_Sigmoid(nn.Module):
     def __init__(self, ic, oc, ks, strd, pad, outpad):
         super().__init__()
@@ -48,7 +53,7 @@ class Convtp_Bn_Sigmoid(nn.Module):
 
 
 
-
+#model
 class decoder_outlayersigmoid(nn.Module):
     def __init__(self, input_size, fc1out, firstw, firsth, kslist, strdlist, padlist, opadlist, iclist, oclist):
         super().__init__()
@@ -78,8 +83,6 @@ class decoder_outlayersigmoid(nn.Module):
         x = x.view(-1,1,self.first_width,self.first_height)
         x = self.Deconvs(x)
         return x
-
-
 
 
 class simnet_decoder_allsize(nn.Module):
@@ -116,6 +119,8 @@ class simnet_decoder_allsize(nn.Module):
 #classfication_model
 #one-dimensional
 
+#submodule
+
 #使ってない
 class Conv1d_Bn_Sigmoid_Pool(nn.Module):
     def __init__(self, inc, outc, ks, pool):
@@ -146,6 +151,9 @@ class Conv1d_Bn_ReLU_Pool(nn.Module):
         x = self.CNN1d(x)
         return x
 
+
+
+#model
 #sigmoid BCEloss用モデル　学習関数に変更必要　保留中
 class cnn1d_sigmoidout(nn.Module):
     """
@@ -222,6 +230,87 @@ class simnet_cnn1d(nn.Module):
 
 #two-dimensional
 
+#submodule
+#畳み込み構造
+class Conv_Bn_ReLu(nn.Module):
+  def __init__(self,input_channel,output_channel,kernel_size):
+    super().__init__()
+    self.CNN = nn.Sequential(nn.Conv2d(input_channel, output_channel, kernel_size),
+                             nn.BatchNorm2d(output_channel),
+                             nn.ReLU(),
+                             )
+  def forward(self,x):
+    x = self.CNN(x)
+    return x
+
+
+class Conv_Bn_ReLu_He_weight(nn.Module):
+  """
+  He initialization
+  """
+  def __init__(self,input_channel,output_channel,kernel_size):
+    super().__init__()
+    self.CNN = nn.Sequential(nn.Conv2d(input_channel, output_channel, kernel_size),
+                             nn.BatchNorm2d(output_channel),
+                             nn.ReLU(),
+                             )
+    
+    #CNN層の重み初期化
+    nn.init.kaiming_uniform_(self.CNN[0].weight, nonlinearity = 'relu')
+
+    #BN層は重み初期化出来ない？
+    # nn.init.kaiming_uniform_(self.CNN[1].weight, nonlinearity = 'relu')
+
+  def forward(self,x):
+    x = self.CNN(x)
+    return x
+
+#LeakyReLU
+class Conv_LeakyReLU(nn.Module):
+    def __init__(self, inc, outc, ks, strd, pad, negslo):
+        super().__init__()
+        self.CNN = nn.Sequential(nn.Conv2d(inc, outc, ks, strd, pad),
+                                 nn.LeakyReLU(negative_slope = negslo),
+                                )
+    def forward(self, x):
+        x = self.CNN(x)
+        return x
+
+
+class Conv_Bn_LeakyReLU(nn.Module):
+    def __init__(self, inc, outc, ks, strd, pad, negslo):
+        super().__init__()
+        self.CNN = nn.Sequential(nn.Conv2d(inc, outc, ks, strd, pad),
+                             nn.BatchNorm2d(outc),
+                             nn.LeakyReLU(negative_slope = negslo),
+                             )
+    def forward(self, x):
+        x = self.CNN(x)
+        return x
+
+
+class Conv_Bn_LeakyReLu_He_weight(nn.Module):
+  """
+  LeakyReLU and He initialization
+  Default of LeakyReLU's negative_slope is 0.01.
+  """
+  def __init__(self, input_channel, output_channel, kernel_size, negslo):
+    super().__init__()
+    self.CNN = nn.Sequential(nn.Conv2d(input_channel, output_channel, kernel_size),
+                             nn.BatchNorm2d(output_channel),
+                             nn.LeakyReLU(negative_slope = negslo),
+                             )
+    
+    #CNN層の重み初期化
+    nn.init.kaiming_uniform_(self.CNN[0].weight, nonlinearity = 'leaky_relu')
+
+    # #BN層は重み初期化出来ない？
+    #nn.init.kaiming_uniform_(self.CNN[1].weight, nonlinearity = 'leaky_relu')
+
+  def forward(self,x):
+    x = self.CNN(x)
+    return x
+
 #sigmoid
 class Conv_Sigmoid(nn.Module):
     def __init__(self, inc, outc, ks, strd, pad):
@@ -234,7 +323,6 @@ class Conv_Sigmoid(nn.Module):
     def forward(self, x):
         x = self.CNN(x)
         return x
-
 
 #プーリング
 class Conv_Bn_ReLU_Pool(nn.Module):
@@ -251,6 +339,10 @@ class Conv_Bn_ReLU_Pool(nn.Module):
         x = self.CNN(x)
         return x
 
+
+
+
+#model
 class simnet_cnn_allsize_ver6_size_test(nn.Module):
   """
   This is a test model of linear-layer's input of simnet_cnn_allsize_ver6 .
@@ -325,40 +417,7 @@ class simnet_cnn_allsize_ver6(nn.Module):
 
 
 
-#LeakyReLU
-class Conv_Bn_LeakyReLU(nn.Module):
-    def __init__(self, inc, outc, ks, strd, pad, negslo):
-        super().__init__()
-        self.CNN = nn.Sequential(nn.Conv2d(inc, outc, ks, strd, pad),
-                             nn.BatchNorm2d(outc),
-                             nn.LeakyReLU(negative_slope = negslo),
-                             )
-    def forward(self, x):
-        x = self.CNN(x)
-        return x
 
-
-class Conv_Bn_LeakyReLu_He_weight(nn.Module):
-  """
-  LeakyReLU and He initialization
-  Default of LeakyReLU's negative_slope is 0.01.
-  """
-  def __init__(self, input_channel, output_channel, kernel_size, negslo):
-    super().__init__()
-    self.CNN = nn.Sequential(nn.Conv2d(input_channel, output_channel, kernel_size),
-                             nn.BatchNorm2d(output_channel),
-                             nn.LeakyReLU(negative_slope = negslo),
-                             )
-    
-    #CNN層の重み初期化
-    nn.init.kaiming_uniform_(self.CNN[0].weight, nonlinearity = 'leaky_relu')
-
-    # #BN層は重み初期化出来ない？
-    #nn.init.kaiming_uniform_(self.CNN[1].weight, nonlinearity = 'leaky_relu')
-
-  def forward(self,x):
-    x = self.CNN(x)
-    return x
 
 class simnet_cnn_allsize_ver5_size_test(nn.Module):
   """
@@ -440,27 +499,6 @@ class simnet_cnn_allsize_ver5(nn.Module):
 #出力にlog_softmax使ってNllLOSSで計算した方が高精度っぽい
 #理由はbackward時にlog_softmaxの計算も含めて、パラメータ更新するから？
 
-class Conv_Bn_ReLu_He_weight(nn.Module):
-  """
-  He initialization
-  """
-  def __init__(self,input_channel,output_channel,kernel_size):
-    super().__init__()
-    self.CNN = nn.Sequential(nn.Conv2d(input_channel, output_channel, kernel_size),
-                             nn.BatchNorm2d(output_channel),
-                             nn.ReLU(),
-                             )
-    
-    #CNN層の重み初期化
-    nn.init.kaiming_uniform_(self.CNN[0].weight, nonlinearity = 'relu')
-
-    #BN層は重み初期化出来ない？
-    # nn.init.kaiming_uniform_(self.CNN[1].weight, nonlinearity = 'relu')
-
-  def forward(self,x):
-    x = self.CNN(x)
-    return x
-
 class simnet_cnn_allsize_ver4_size_test(nn.Module):
   """
   This is a test model of linear-layer's input of simnet_cnn_allsize_ver4 .
@@ -536,21 +574,6 @@ class simnet_cnn_allsize_ver4(nn.Module):
     x = self.fc2(x)
     return F.log_softmax(x, dim=1)
 
-
-
-
-
-
-class Conv_Bn_ReLu(nn.Module):
-  def __init__(self,input_channel,output_channel,kernel_size):
-    super().__init__()
-    self.CNN = nn.Sequential(nn.Conv2d(input_channel, output_channel, kernel_size),
-                             nn.BatchNorm2d(output_channel),
-                             nn.ReLU(),
-                             )
-  def forward(self,x):
-    x = self.CNN(x)
-    return x
 
 class simnet_cnn_allsize_ver3_size_test(nn.Module):
   """
