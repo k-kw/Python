@@ -33,7 +33,8 @@ def display_GAN_curv(fig_w, fig_h, lblfs, sclfs, Dloss, Gloss, Dx, DGbefore, DGa
 
 
 def train_gan(epochs, dl, device, nz, netD, netG, criterion, optimG, optimD, \
-    display_interval):
+    display_interval, \
+        testgen_interval, test_fixed_noise, test_genimg_dir):
     G_losses = []
     D_losses = []
     D_x_out = []
@@ -100,6 +101,14 @@ def train_gan(epochs, dl, device, nz, netD, netG, criterion, optimG, optimD, \
             D_x_out.append(D_x)
             D_G_z1_out.append(D_G_z1)
             D_G_z2_out.append(D_G_z2)
+
+
+        #固定ノイズでテスト、生成された画像をディレクトリに保存
+        if (epoch + 1) % testgen_interval == 0:
+            fake_image = netG(test_fixed_noise)
+            utils.save_image(fake_image.detach(), \
+                '{}/fake_samples_epoch_{:03d}.png'.format(test_genimg_dir, epoch + 1),
+                        normalize=True, nrow=10)
     
 
     return D_losses, G_losses, D_x_out, D_G_z1_out, D_G_z2_out
