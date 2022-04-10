@@ -56,7 +56,7 @@ def display_GAN_curv(fig_w, fig_h, lblfs, sclfs, Dloss, Gloss, Dx, DGbefore, DGa
     plt.subplot(2, 1, 1)
     plt.plot(range(1, 1 + len(Dloss)), Dloss, label="discriminator")
     plt.plot(range(1, 1 + len(Gloss)), Gloss, label="generator")
-    plt.xlabel('Epochs')
+    plt.xlabel('iter')
     plt.ylabel('Loss')
     plt.legend()
 
@@ -65,7 +65,7 @@ def display_GAN_curv(fig_w, fig_h, lblfs, sclfs, Dloss, Gloss, Dx, DGbefore, DGa
     plt.plot(range(1, 1 + len(Dx)), Dx, label="realimg")
     plt.plot(range(1, 1 + len(DGbefore)), DGbefore, label="generateimg_before")
     plt.plot(range(1, 1 + len(DGafter)), DGafter, label="generateimg_after")
-    plt.xlabel('Epochs')
+    plt.xlabel('iter')
     plt.ylabel('identification-signal')
     plt.legend()
 
@@ -132,9 +132,9 @@ def train_gan(epochs, dl, device, nz, netD, netG, criterion, optimG, optimD, \
                               itr + 1, len(dl),
                               errD.item(), errG.item(), D_x, D_G_z1, D_G_z2))
 
-            # if epoch == 0 and itr == 0:     # 初回に本物画像を保存する
-            #     utils.save_image(real_image, '{}/real_samples.png'.format(outf),
-            #                       normalize=True, nrow=10)
+            if epoch == 0 and itr == 0:     # 初回に本物画像を保存する
+                utils.save_image(real_image, '{}/real_samples.png'.format(test_genimg_dir),
+                                  normalize=True, nrow=10)
 
             # ログ出力用データの保存
             D_losses.append(errD.item())
