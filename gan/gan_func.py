@@ -1,6 +1,7 @@
 import torch
 import torchvision.utils as utils
 import matplotlib.pyplot as plt
+import time 
 
 def onehot_encode(label, device, n_class):
     """
@@ -82,6 +83,8 @@ def train_gan(epochs, dl, device, nz, netD, netG, criterion, optimG, optimD, \
     D_G_z1_out = []
     D_G_z2_out = []
 
+    t1 = time.time()
+
 
     for epoch in range(epochs):
         for itr, data in enumerate(dl):
@@ -150,7 +153,13 @@ def train_gan(epochs, dl, device, nz, netD, netG, criterion, optimG, optimD, \
             utils.save_image(fake_image.detach(), \
                 '{}/fake_samples_epoch_{:03d}.png'.format(test_genimg_dir, epoch + 1),
                         normalize=True, nrow=10)
-    
+        
+        print(f'-----------エポック{epoch+1}--------------')
+        t2=time.time()
+        caltime=(t2-t1)/60
+        print(f'epochtime:{caltime:.4f}分')
+        t1=time.time()
+
 
     return D_losses, G_losses, D_x_out, D_G_z1_out, D_G_z2_out
 
