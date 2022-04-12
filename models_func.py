@@ -14,6 +14,20 @@ torch.manual_seed(0)
 
 #submodule
 
+class Conv_ReLU_Pixshuf(nn.Module):
+    def __init__(self, inc, outc, ks, strd, pad, upsclfac):
+        super().__init__()
+        self.pixshuf = nn.Sequential(
+            nn.Conv2d(inc, outc, ks, strd, pad),
+            nn.ReLU(),
+            nn.PixelShuffle(upscale_factor = upsclfac),
+
+        )
+    
+    def forward(self, x):
+        x = self.pixshuf(x)
+        return x
+
 class Convtp_Tanh(nn.Module):
     def __init__(self, inc, outc, ks, strd, pad, outpad):
         super().__init__()
@@ -54,6 +68,9 @@ class Convtp_Bn_Sigmoid(nn.Module):
 
 
 #model
+
+
+
 class decoder_outlayersigmoid(nn.Module):
     def __init__(self, input_size, fc1out, firstw, firsth, kslist, strdlist, padlist, opadlist, iclist, oclist):
         super().__init__()
