@@ -2,6 +2,7 @@ import torch
 import torchvision.utils as utils
 import matplotlib.pyplot as plt
 import time 
+import numpy as np
 
 def onehot_encode(label, device, n_class):
     """
@@ -254,4 +255,27 @@ def train_cgan(epochs, dl, classes, device, nz, netD, netG, criterion, optimG, o
                         normalize=True, nrow=10)
 
     return D_losses, G_losses, D_x_out, D_G_z1_out, D_G_z2_out
-           
+
+
+
+def random_crop(image, crop_size):
+    """画像を指定されたサイズになるようにランダムにクロップを行う
+
+    Args:
+        image (np.array): ランダムクロップする画像
+        crop_size (tuple): ランダムクロップするサイズ
+
+    Returns:
+        np.array: ランダムクロップされた画像
+    """
+    
+    h, w, _ = image.shape
+
+    top = np.random.randint(0, h - crop_size[0])
+    left = np.random.randint(0, w - crop_size[1])
+
+    bottom = top + crop_size[0]
+    right = left + crop_size[1]
+
+    image = image[top:bottom, left:right, :]
+    return image
