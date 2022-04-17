@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 import py_func.models_func as my_model
+#######-----------GAN,CGAN,LSGAN------------#########
 
 class Generator(nn.Module):
     """
@@ -142,3 +143,54 @@ class Dscrmntr_notsigmoid(nn.Module):
         """
         x = self.Convs(x)
         return x.squeeze()     # Tensorの形状を(B)に変更して戻り値とする
+
+
+
+
+###########---------ESRGAN---------##########
+#submodule
+class DenseResidualBlock(nn.Module):
+    def __init__(self, length, filters, ngsllist, res_scale=0.2):
+        super().__init__()
+        self.lenlayer = length
+        self.res_scale = res_scale
+
+
+        convs = []
+        for i in range(self.lenlayer):            
+            if(i < self.lenlayer-1):
+                #最終層以外はConv_LeakyReLU
+                #データサイズを変えないためにカーネルサイズとストライド、パディングは固定
+                convs.append(my_model.Conv_LeakyReLU(filters*(i+1), filters, \
+                3, 1, 1, ngsllist[i]))
+            else:
+                #最終層はConvのみ
+                convs.append(nn.Conv2d(filters*(i+1), filters, 3, 1, 1))
+        
+        self.convs = nn.Sequential(*convs)
+
+    def forward(self, x):
+        inputs = x
+        for convlay in self.convs:
+            out = convlay(inputs)
+            inputs = torch.cat([inputs, out], 1)
+        return out.mul(self.res_scale) + x
+        
+
+
+class ResidualInResidualDenseBlock(nn.Module):
+    """
+    GenearatorのResidualInResidualDenseBlockのクラス
+    """
+    def __init__(self, lendns, fltrsdns, ngsldns, rscldns,\
+         length, res_scale=0.2):
+        super(ResidualInResidualDenseBlock, self).__init__()
+        self.res_scale = res_scale
+
+        dnsblck = []
+        for _ in range(length):
+            dnsblck.append(DenseResidualBlock(lendns, fltrsdns, ngsldns, rscldns))
+        self.dnsblck = nn.Sequential(*dnsblck)
+    
+    def forward(self, x):
+        return self.dnsblck(x).mul(self.res_scale) + x
