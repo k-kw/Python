@@ -212,34 +212,38 @@ class GeneratorRRDB(nn.Module):
     """
     Generatorのクラス
     """
-    def __init__(self, channels, filters=64, num_res_blocks=16, num_upsample=2):
+    def __init__(self, inc, fltrs, lendns, ngsldns, 
+    rscldns, lenrir, rsclrir, num_res_blck=16, num_upsmpl=2, upscale_factor=2):
         super(GeneratorRRDB, self).__init__()
         
-        self.conv1 = nn.Conv2d(channels, filters, kernel_size=3, stride=1, padding=1)
+        self.conv1 = nn.Conv2d(inc, fltrs, 3, 1, 1)
         
-        self.res_blocks = nn.Sequential(*[ResidualInResidualDenseBlock(filters) 
-                                        for _ in range(num_res_blocks)])
-        self.conv2 = nn.Conv2d(filters, filters, kernel_size=3, stride=1, padding=1)
+        self.res_blocks = nn.Sequential(*[ResidualInResidualDenseBlock(
+            lendns, fltrs, ngsldns, rscldns, lenrir, rsclrir
+            ) for _ in range(num_res_blck)])
+        
+        self.conv2 = nn.Conv2d(fltrs, fltrs, 3, 1, 1)
         
         upsample_layers = []
-        
-        for _ in range(num_upsample):
+        for _ in range(num_upsmpl):
             upsample_layers += [
-                nn.Conv2d(filters, filters * 4, kernel_size=3, stride=1, padding=1),
+                nn.Conv2d(fltrs, fltrs*(upscale_factor**2), 3, 1, 1),
                 nn.LeakyReLU(),
-                nn.PixelShuffle(upscale_factor=2),
+                nn.PixelShuffle(upscale_factor),
             ]
         self.upsampling = nn.Sequential(*upsample_layers)
+
         self.conv3 = nn.Sequential(
-            nn.Conv2d(filters, filters, kernel_size=3, stride=1, padding=1),
+            nn.Conv2d(fltrs, fltrs, 3, 1, 1),
             nn.LeakyReLU(),
-            nn.Conv2d(filters, channels, kernel_size=3, stride=1, padding=1),
+            nn.Conv2d(fltrs, inc, 3, 1, 1),
         )
     
     def forward(self, x):
         out1 = self.conv1(x)
         out = self.res_blocks(out1)
         out2 = self.conv2(out)
+        #各要素足し算
         out = torch.add(out1, out2)
         out = self.upsampling(out)
         out = self.conv3(out)
