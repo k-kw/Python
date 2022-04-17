@@ -150,6 +150,16 @@ class Dscrmntr_notsigmoid(nn.Module):
 ###########---------ESRGAN---------##########
 #submodule
 class DenseResidualBlock(nn.Module):
+    """
+    :param length: number of Convlayer
+    :type length: int
+    :param filters: fundamental number of channels
+    :type filters: int
+    :param ngsllist: list consist of negative slope of each layers's LeakyReLU 
+    :type ngsllist: list
+    :param res_scale: coefficient of output
+    :type res_scale: float or double
+    """
     def __init__(self, length, filters, ngsllist, res_scale=0.2):
         super().__init__()
         self.lenlayer = length
@@ -194,3 +204,43 @@ class ResidualInResidualDenseBlock(nn.Module):
     
     def forward(self, x):
         return self.dnsblck(x).mul(self.res_scale) + x
+
+
+
+#Generator
+class GeneratorRRDB(nn.Module):
+    """
+    Generatorのクラス
+    """
+    def __init__(self, channels, filters=64, num_res_blocks=16, num_upsample=2):
+        super(GeneratorRRDB, self).__init__()
+        
+        self.conv1 = nn.Conv2d(channels, filters, kernel_size=3, stride=1, padding=1)
+        
+        self.res_blocks = nn.Sequential(*[ResidualInResidualDenseBlock(filters) 
+                                        for _ in range(num_res_blocks)])
+        self.conv2 = nn.Conv2d(filters, filters, kernel_size=3, stride=1, padding=1)
+        
+        upsample_layers = []
+        
+        for _ in range(num_upsample):
+            upsample_layers += [
+                nn.Conv2d(filters, filters * 4, kernel_size=3, stride=1, padding=1),
+                nn.LeakyReLU(),
+                nn.PixelShuffle(upscale_factor=2),
+            ]
+        self.upsampling = nn.Sequential(*upsample_layers)
+        self.conv3 = nn.Sequential(
+            nn.Conv2d(filters, filters, kernel_size=3, stride=1, padding=1),
+            nn.LeakyReLU(),
+            nn.Conv2d(filters, channels, kernel_size=3, stride=1, padding=1),
+        )
+    
+    def forward(self, x):
+        out1 = self.conv1(x)
+        out = self.res_blocks(out1)
+        out2 = self.conv2(out)
+        out = torch.add(out1, out2)
+        out = self.upsampling(out)
+        out = self.conv3(out)
+        return out
