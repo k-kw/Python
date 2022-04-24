@@ -60,8 +60,10 @@ class TestImageDataset(Dataset):
     def __init__(self, dataset_dir, mean, std):
         self.hr_transform = transforms.Compose([transforms.ToTensor(),transforms.Normalize(mean, std)])
         self.files = sorted(glob(osp.join(dataset_dir, '*')))
+        self.mean = mean
+        self.std = std
     
-    def lr_transform(self, img, img_size, mean, std):
+    def lr_transform(self, img, img_size):
         """
         様々な入力画像のサイズに対応するために、
         入力画像のサイズを1/4にするように処理
@@ -72,7 +74,7 @@ class TestImageDataset(Dataset):
                                img_width // 4), 
                                Image.BICUBIC),
             transforms.ToTensor(),
-            transforms.Normalize(mean, std)])
+            transforms.Normalize(self.mean, self.std)])
         img = self.__lr_transform(img)
         return img
             
@@ -100,6 +102,8 @@ class ESRGAN():
     optに様々なパラメータ
     """
     def __init__(self, opt, log_dir):
+
+        #モデルを準備
         self.generator = ganmd.GeneratorRRDB(opt.channels, fltrs=64, lendns = 5, \
             num_res_blck=opt.residual_blocks, num_upsmpl=2, upscale_factor=2).to(opt.device)
         
@@ -108,10 +112,12 @@ class ESRGAN():
         self.feature_extractor = ganmd.FeatureExtractor().to(opt.device)
         self.feature_extractor.eval()
 
+        #損失関数を準備
         self.criterion_GAN = nn.BCEWithLogitsLoss().to(opt.device)
         self.criterion_content = nn.L1Loss().to(opt.device)
         self.criterion_pixel = nn.L1Loss().to(opt.device)
 
+        #最適化アルゴリズムを準備
         self.optimizer_G = optim.Adam(self.generator.parameters(), lr=opt.lr, betas=(opt.b1, opt.b2))
         self.optimizer_D = optim.Adam(self.discriminator.parameters(), lr=opt.lr, betas=(opt.b1, opt.b2))
 
@@ -127,18 +133,17 @@ class ESRGAN():
         imgs_lr = Variable(imgs['lr'].type(self.Tensor))
         imgs_hr = Variable(imgs['hr'].type(self.Tensor))
 
-        # ground truth
-        valid = Variable(self.Tensor(np.ones((imgs_lr.size(0), *self.discriminator.output_shape))), 
-                          requires_grad=False)
-        fake = Variable(self.Tensor(np.zeros((imgs_lr.size(0), *self.discriminator.output_shape))), 
-                        requires_grad=False)
+        # # ground truth
+        # valid = Variable(self.Tensor(np.ones((imgs_lr.size(0), *self.discriminator.output_shape))), 
+        #                   requires_grad=False)
+        # fake = Variable(self.Tensor(np.zeros((imgs_lr.size(0), *self.discriminator.output_shape))), 
+        #                 requires_grad=False)
 
         # バックプロパゲーションの前に勾配を0にする
         self.optimizer_G.zero_grad()
 
         # 低解像度の画像から高解像度の画像を生成
         gen_hr = self.generator(imgs_lr)
-
         loss_pixel = self.criterion_pixel(gen_hr, imgs_hr)
 
         # 画素単位の損失であるloss_pixelで事前学習を行う
@@ -221,7 +226,7 @@ class ESRGAN():
         for k, v in train_info.items():
             self.writer.add_scalar(k, v, batches_done)
 
-    def save_image(self, imgs, batches_done, image_test_save_dir, idx):
+    def save_image(self, imgs, batches_done, image_test_save_dir, idx, mean, std):
         """
         画像の保存
         """
@@ -229,7 +234,7 @@ class ESRGAN():
             # Save image grid with upsampled inputs and outputs
             imgs_lr = Variable(imgs["lr"].type(self.Tensor))
             gen_hr = self.generator(imgs_lr)
-            gen_hr = denormalize(gen_hr)
+            gen_hr = denormalize(gen_hr, mean, std)
             self.writer.add_image('image_{}'.format(idx), gen_hr[0], batches_done)
 
             image_batch_save_dir = osp.join(image_test_save_dir, '{:03}'.format(idx))

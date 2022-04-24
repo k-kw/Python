@@ -291,6 +291,7 @@ class Discriminator(nn.Module):
         self.input_shape = input_shape
         in_channels, in_height, in_width = self.input_shape
         patch_h, patch_w = int(in_height / 2 ** 4), int(in_width / 2 ** 4)
+        #学習時に識別器の正解ラベルを作るために必要
         self.output_shape = (1, patch_h, patch_w)
     
         layers = []
