@@ -162,7 +162,7 @@ class DenseResidualBlock(nn.Module):
     :param res_scale: coefficient of output
     :type res_scale: float or double
     """
-    def __init__(self, length, filters, ngsllist, res_scale=0.2):
+    def __init__(self, length, filters, res_scale=0.2):
         super().__init__()
         self.lenlayer = length
         self.res_scale = res_scale
@@ -174,7 +174,7 @@ class DenseResidualBlock(nn.Module):
                 #最終層以外はConv_LeakyReLU
                 #データサイズを変えないためにカーネルサイズとストライド、パディングは固定
                 convs.append(my_model.Conv_LeakyReLU(filters*(i+1), filters, \
-                3, 1, 1, ngsllist[i]))
+                3, 1, 1, 0.2))
             else:
                 #最終層はConvのみ
                 convs.append(nn.Conv2d(filters*(i+1), filters, 3, 1, 1))
@@ -187,21 +187,36 @@ class DenseResidualBlock(nn.Module):
             out = convlay(inputs)
             inputs = torch.cat([inputs, out], 1)
         return out.mul(self.res_scale) + x
-        
+
+
+class DiscriminatorBlock(nn.Module):
+    def __init__(self, inc, outc, first_block = False):
+        layers = []
+
+        if not first_block:
+            layers.append(my_model.Conv_Bn_LeakyReLU(inc, outc, 3, 1, 1, 0.2))
+        else:
+            layers.append(my_model.Conv_LeakyReLU(inc, outc, 3, 1, 1, 0.2))
+
+        layers.append(my_model.Conv_Bn_LeakyReLU(outc, outc, 3, 2, 1, 0.2))
+        self.discblock = nn.Sequential(*layers)
+    def forward(self, x):
+        x = self.discblock(x)
+        return x
 
 
 class ResidualInResidualDenseBlock(nn.Module):
     """
     GenearatorのResidualInResidualDenseBlockのクラス
     """
-    def __init__(self, lendns, fltrsdns, ngsldns, rscldns,\
-         length, res_scale=0.2):
+    def __init__(self, lendns, fltrsdns,\
+         length = 3, res_scale=0.2):
         super(ResidualInResidualDenseBlock, self).__init__()
         self.res_scale = res_scale
 
         dnsblck = []
         for _ in range(length):
-            dnsblck.append(DenseResidualBlock(lendns, fltrsdns, ngsldns, rscldns))
+            dnsblck.append(DenseResidualBlock(lendns, fltrsdns))
         self.dnsblck = nn.Sequential(*dnsblck)
     
     def forward(self, x):
@@ -214,14 +229,14 @@ class GeneratorRRDB(nn.Module):
     """
     Generatorのクラス
     """
-    def __init__(self, inc, fltrs, lendns, ngsldns, 
-    rscldns, lenrir, rsclrir, num_res_blck=16, num_upsmpl=2, upscale_factor=2):
+    def __init__(self, inc, fltrs, lendns, 
+    num_res_blck=16, num_upsmpl=2, upscale_factor=2):
         super(GeneratorRRDB, self).__init__()
         
         self.conv1 = nn.Conv2d(inc, fltrs, 3, 1, 1)
         
         self.res_blocks = nn.Sequential(*[ResidualInResidualDenseBlock(
-            lendns, fltrs, ngsldns, rscldns, lenrir, rsclrir
+            lendns, fltrs
             ) for _ in range(num_res_blck)])
         
         self.conv2 = nn.Conv2d(fltrs, fltrs, 3, 1, 1)
@@ -251,8 +266,6 @@ class GeneratorRRDB(nn.Module):
         out = self.conv3(out)
         return out
 
-
-
 class FeatureExtractor(nn.Module):
     """
     Perceputual lossを計算するために特徴量を抽出するためのクラス
@@ -266,7 +279,6 @@ class FeatureExtractor(nn.Module):
     def forward(self, img):
         return self.vgg19_54(img)
 
-#コピペしただけ
 class Discriminator(nn.Module):
     """
     Discriminatorのクラス
@@ -279,34 +291,11 @@ class Discriminator(nn.Module):
         patch_h, patch_w = int(in_height / 2 ** 4), int(in_width / 2 ** 4)
         self.output_shape = (1, patch_h, patch_w)
     
-        def discriminator_block(in_filters, out_filters, first_block=False):
-            layers = []
-            layers.append(nn.Conv2d(in_filters, 
-                                    out_filters, 
-                                    kernel_size=3, 
-                                    stride=1, 
-                                    padding=1))
-            if not first_block:
-                layers.append(nn.BatchNorm2d(out_filters))
-            layers.append(nn.LeakyReLU(0.2, inplace=True))
-            layers.append(nn.Conv2d(out_filters, 
-                                    out_filters, 
-                                    kernel_size=3, 
-                                    stride=2, 
-                                    padding=1))
-            layers.append(nn.BatchNorm2d(out_filters))
-            layers.append(nn.LeakyReLU(0.2, inplace=True))
-            return layers
-        
         layers = []
         in_filters = in_channels
         for i, out_filters in enumerate([64, 128, 256, 512]):
-            print(discriminator_block(in_filters, 
-                                      out_filters, 
-                                      first_block=(i == 0)))
-            layers.extend(discriminator_block(in_filters, 
-                                              out_filters, 
-                                              first_block=(i == 0)))
+            layers.extend(DiscriminatorBlock(in_filters, out_filters, 
+            first_block=(i==0)))
             in_filters = out_filters
         
         layers.append(nn.Conv2d(out_filters, 
@@ -319,3 +308,4 @@ class Discriminator(nn.Module):
     
     def forward(self, img):
         return self.model(img)
+
