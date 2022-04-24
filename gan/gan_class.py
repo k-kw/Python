@@ -6,6 +6,7 @@ from torch.autograd import Variable
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.tensorboard import SummaryWriter
+import json
 
 
 import py_func.gan.gan_model as ganmd
@@ -56,7 +57,7 @@ class TestImageDataset(Dataset):
     lr_transformで入力画像を高さと幅それぞれ1/4の低解像度の画像を生成し、
     hr_transformでオリジナルの画像を高解像度の画像として用いる
     """
-    def __init__(self, dataset_dir):
+    def __init__(self, dataset_dir, mean, std):
         self.hr_transform = transforms.Compose([transforms.ToTensor(),transforms.Normalize(mean, std)])
         self.files = sorted(glob(osp.join(dataset_dir, '*')))
     
@@ -100,9 +101,9 @@ class ESRGAN():
     """
     def __init__(self, opt, log_dir):
         self.generator = ganmd.GeneratorRRDB(opt.channels, fltrs=64, lendns = 5, \
-            num_res_blocks=opt.residual_blocks, num_upsmpl=2, upscale_factor=2).to(opt.device)
+            num_res_blck=opt.residual_blocks, num_upsmpl=2, upscale_factor=2).to(opt.device)
         
-        self.discriminator = ganmd.Discriminator(input_shape=(opt.channels, opt.hr_height, opt.hr_height)).to(opt.device)
+        self.discriminator = ganmd.Discriminator(input_shape=(opt.channels, opt.hr_height, opt.hr_width)).to(opt.device)
 
         self.feature_extractor = ganmd.FeatureExtractor().to(opt.device)
         self.feature_extractor.eval()
@@ -246,3 +247,10 @@ class ESRGAN():
 
         torch.save(self.generator.state_dict(), generator_weight_path)
         torch.save(self.discriminator.state_dict(), discriminator_weight_path)
+
+
+def save_json(file, save_path, mode):
+    """Jsonファイルを保存
+    """
+    with open(save_path, mode) as outfile:
+        json.dump(file, outfile, indent=4)

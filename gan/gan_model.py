@@ -191,6 +191,8 @@ class DenseResidualBlock(nn.Module):
 
 class DiscriminatorBlock(nn.Module):
     def __init__(self, inc, outc, first_block = False):
+        super(DiscriminatorBlock, self).__init__()
+
         layers = []
 
         if not first_block:
@@ -294,8 +296,7 @@ class Discriminator(nn.Module):
         layers = []
         in_filters = in_channels
         for i, out_filters in enumerate([64, 128, 256, 512]):
-            layers.extend(DiscriminatorBlock(in_filters, out_filters, 
-            first_block=(i==0)))
+            layers.append(DiscriminatorBlock(in_filters, out_filters, first_block=(i==0)))
             in_filters = out_filters
         
         layers.append(nn.Conv2d(out_filters, 
