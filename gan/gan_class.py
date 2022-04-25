@@ -110,6 +110,7 @@ class ESRGAN():
         self.discriminator = ganmd.Discriminator(input_shape=(opt.channels, opt.hr_height, opt.hr_width)).to(opt.device)
 
         self.feature_extractor = ganmd.FeatureExtractor().to(opt.device)
+        #特徴抽出器は学習しない
         self.feature_extractor.eval()
 
         #損失関数を準備
@@ -185,6 +186,7 @@ class ESRGAN():
         pred_fake = self.discriminator(gen_hr)
 
         # Adversarial loss
+        # Relativistic Average Discriminator
         loss_GAN = self.criterion_GAN(pred_fake - pred_real.mean(0, keepdim=True), valid)
 
         # Perceptual loss
@@ -202,6 +204,7 @@ class ESRGAN():
         pred_real = self.discriminator(imgs_hr)
         pred_fake = self.discriminator(gen_hr.detach())
 
+        # Relativistic Average Discriminator
         loss_real = self.criterion_GAN(pred_real - pred_fake.mean(0, keepdim=True), valid)            
         loss_fake = self.criterion_GAN(pred_fake - pred_real.mean(0, keepdim=True), fake)    
         loss_D = (loss_real + loss_fake) / 2
