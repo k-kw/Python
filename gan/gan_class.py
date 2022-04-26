@@ -116,8 +116,23 @@ class AlignedDataset(Dataset):
         # 全画像ファイル数を返す
         return len(self.AB_paths)
 
+# GANのAdversarial損失の定義(Real/Fake識別)
+class GANLoss(nn.Module):
+    def __init__(self):
+        super().__init__()
 
+        self.register_buffer('real_label', torch.tensor(1.0))
+        self.register_buffer('fake_label', torch.tensor(0.0))
+        # Real/Fake識別の損失を、シグモイド＋バイナリクロスエントロピーで計算
+        self.loss = nn.BCEWithLogitsLoss()
 
+    def __call__(self, prediction, is_real):
+        if is_real:
+            target_tensor = self.real_label
+        else:
+            target_tensor = self.fake_label
+
+        return self.loss(prediction, target_tensor.expand_as(prediction))
 
 
 

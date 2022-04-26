@@ -77,6 +77,9 @@ class Generator_Unet(nn.Module):
             Unet_decoder(128, 3, norm_true=False),
             nn.Tanh(),
         )
+    def concat(self, x, y):
+        # 特徴マップの結合
+        return torch.cat([x, y], dim=1)
 
     def forward(self, x):
         # 偽物画像の生成
@@ -100,6 +103,21 @@ class Generator_Unet(nn.Module):
 
         return y0
     
+class Discriminatorpix2pix(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.disc = nn.Sequential(
+            my_model.Conv_LeakyReLU(6, 64, 4, 2, 1, 0.2),
+            my_model.Conv_Bn_LeakyReLU(64, 128, 4, 2, 1, 0.2),
+            my_model.Conv_Bn_LeakyReLU(128, 256, 4, 2, 1, 0.2),
+            my_model.Conv_Bn_LeakyReLU(256, 512, 4, 1, 1, 0.2),
+            nn.Conv2d(512, 1, 4, 1, 1)
+        )
+    def forward(self, x):
+        x = self.disc(x)
+        return x
+
+
 
 ###########---------ESRGAN---------##########
 #submodule
