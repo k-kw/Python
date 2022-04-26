@@ -17,6 +17,112 @@ import os
 import sys
 import os.path as osp
 
+#-------------------pix2pix------------------
+import random
+
+# 条件画像と正解画像のペアデータセット生成クラス
+class AlignedDataset(Dataset):
+    IMG_EXTENSIONS = ['.png', 'jpg']
+    # configは全ての学習条件を格納する
+
+    # 画像データは'/path/to/data/train'および'/path/to/data/test'に
+    # {A,B}の形式で格納されているものとみなす
+
+    def __init__(self, config):
+        # データセットクラスの初期化
+        self.config = config
+
+        # データディレクトリの取得
+        dir = os.path.join(config.dataroot, config.phase)
+        # 画像データパスの取得
+        self.AB_paths = sorted(self.__make_dataset(dir))
+
+    #インスタンス化していなくても呼び出せるメソッドには@classmethodをつける
+    @classmethod
+    def is_image_file(self, fname):
+        # 画像ファイルかどうかを返す
+        return any(fname.endswith(ext) for ext in self.IMG_EXTENSIONS)
+
+    @classmethod
+    def __make_dataset(self, dir):
+        # 画像データセットをメモリに格納
+        images = []
+        assert os.path.isdir(dir), '%s is not a valid directory' % dir
+
+        # os.walkでディレクトリを上位階層から順にファイルをfnamesに
+        for root, _, fnames in sorted(os.walk(dir)):
+            for fname in fnames:
+                if self.is_image_file(fname):
+                    path = os.path.join(root, fname)
+                    images.append(path)
+        return images
+
+    def __transform(self, param):
+        list = []
+
+        load_size = self.config.load_size
+
+        # 入力画像を一度286x286にリサイズし、その後で256x256にランダムcropする
+        list.append(transforms.Resize([load_size, load_size], Image.BICUBIC))
+
+        (x, y) = param['crop_pos']
+        crop_size = self.config.crop_size
+        list.append(transforms.Lambda(lambda img: img.crop((x, y, x + crop_size, y + crop_size))))
+
+        # 1/2の確率で左右反転する
+        if param['flip']:
+            list.append(transforms.Lambda(lambda img: img.transpose(Image.FLIP_LEFT_RIGHT)))
+
+        # RGB画像をmean=(0.5,0.5,0.5), std=(0.5,0.5,0.5)にNormalizeする
+        list += [transforms.ToTensor(),
+                 transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))]
+
+        return transforms.Compose(list)
+
+    def __transform_param(self):
+        x_max = self.config.load_size - self.config.crop_size
+        x = random.randint(0, np.maximum(0, x_max))
+        y = random.randint(0, np.maximum(0, x_max))
+
+        flip = random.random() > 0.5
+
+        return {'crop_pos': (x, y), 'flip': flip}
+
+    def __getitem__(self, index):
+        # 学習用データ１つの生成
+        # A(テンソル) : 条件画像
+        # B(テンソル) : Aのペアとなるターゲット画像
+
+        # ランダムなindexの画像を取得 
+        AB_path = self.AB_paths[index]
+        AB = Image.open(AB_path).convert('RGB')
+
+        # 画像を2分割してAとBをそれぞれ取得
+        # ランダムシードの生成
+        param = self.__transform_param()
+        w, h = AB.size
+        w2 = int(w / 2)
+        # 256x256サイズの画像生成
+        # 一度リサイズしてランダムな位置で256x256にcropする
+        # AとBは同じ位置からcropする
+        transform = self.__transform(param)
+        A = transform(AB.crop((0, 0, w2, h)))
+        B = transform(AB.crop((w2, 0, w, h)))
+
+        #return {'A': A, 'B': B, 'A_paths': AB_path, 'B_paths': AB_path}
+        return {'A': B, 'B': A, 'A_paths': AB_path, 'B_paths': AB_path}
+
+    def __len__(self):
+        # 全画像ファイル数を返す
+        return len(self.AB_paths)
+
+
+
+
+
+
+
+
 #-------------------ESRGAN-------------------
 class ImageDataset(Dataset):
     """
@@ -107,7 +213,7 @@ class ESRGAN():
         self.generator = ganmd.GeneratorRRDB(opt.channels, fltrs=64, lendns = 5, \
             num_res_blck=opt.residual_blocks, num_upsmpl=2, upscale_factor=2).to(opt.device)
         
-        self.discriminator = ganmd.Discriminator(input_shape=(opt.channels, opt.hr_height, opt.hr_width)).to(opt.device)
+        self.discriminator = ganmd.DiscriminatorESR(input_shape=(opt.channels, opt.hr_height, opt.hr_width)).to(opt.device)
 
         self.feature_extractor = ganmd.FeatureExtractor().to(opt.device)
         #特徴抽出器は学習しない
