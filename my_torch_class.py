@@ -40,29 +40,41 @@ class My_dataset:
         self.labels = torch.tensor(self.labels, dtype = torch.int64)
 
     
-    def splitdata(self, train_length):
-        self.data_t, self.data_v = self.data[:train_length], self.data[train_length:]
-        self.label_t, self.label_v = self.labels[:train_length], self.labels[train_length:]
+    def splitdata(self, lentrain, lenval = None):
+        if lenval == None:
+            #訓練データと評価データに分割
+            self.data_t, self.data_v = self.data[:lentrain], \
+                self.data[lentrain:]
+            self.label_t, self.label_v = self.labels[:lentrain], \
+                self.labels[lentrain:]
+        else:
+            #訓練、評価、テストに分割
+            self.cftest = True
+            self.data_t, self.data_v, self.data_test = self.data[:lentrain], \
+                self.data[lentrain:lentrain + lenval], self.data[lentrain + lenval:]
+            self.label_t, self.label_v, self.label_test = self.labels[:lentrain], \
+                self.labels[lentrain:lentrain + lenval], self.labels[lentrain + lenval:]
+
 
 
     def datanormalize(self):
         self.data_t, self.mean, self.std = tensor_norm_DL(self.data_t)
         self.data_v, _, _ = tensor_norm_DL(self.data_v, self.mean, self.std)
-
+        if self.cftest:
+            self.data_test, _, _ = tensor_norm_DL(self.data_test, self.mean, self.std)
 
     def labelnormalize(self):
         self.label_t, max, min = tensor_norm(self.label_t)
         self.label_v, _, _ = tensor_norm(self.label_v, max, min)
-
-
+        if self.cftest:
+            self.label_test, _, _ = tensor_norm(self.label_test, max, min)
+            
     def tensor2dataset(self):
         self.dataset_train = torch.utils.data.TensorDataset(self.data_t, self.label_t)
         self.dataset_val = torch.utils.data.TensorDataset(self.data_v, self.label_v)
-
-
-
-
-
+        if self.cftest:
+            self.dataset_test = torch.utils.data.TensorDataset(self.data_test, self.label_test)
+            
 
 def channeltensor_mean_std(tensors):
     """
