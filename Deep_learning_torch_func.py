@@ -246,7 +246,7 @@ def train_model_mixup(dlt, dlv, model, lossfunc, optimizer, epochs, device, \
         val_acc_list.append(val_val[0])
 
         #modelを保存
-        if (modelsavedir != None) and (((epoch+1) == saveepoch) or ((epoch+1)-saveepoch)%saveinterval == 0):
+        if (modelsavedir != None) and (((epoch+1) >= saveepoch) and ((epoch+1)-saveepoch)%saveinterval == 0):
             os.makedirs(modelsavedir, exist_ok=True)
             mdpath = osp.join(modelsavedir, "epoch{}.pth".format(epoch + 1))
             torch.save(model.state_dict(), mdpath)
@@ -367,7 +367,8 @@ def val_decode_model(dataloader, model, device, lossfunc):
 
 #Deep Learning(decode)
 def train_decode_model_mixup(dlt, dlv, model, lossfunc, \
-    optimizer, epochs, device, mixalpha = 1.0, scheduler = None):
+    optimizer, epochs, device, mixalpha = 1.0, scheduler = None, \
+            modelsavedir = None, saveepoch = 100, saveinterval = 10):
     t1=time.time()
     train_loss_list=[]
     val_loss_list=[]
@@ -393,10 +394,18 @@ def train_decode_model_mixup(dlt, dlv, model, lossfunc, \
         if(scheduler != None):
             scheduler.step()
 
+        
         val_val = val_decode_model(dlv, model, device, lossfunc)
         val_train = val_decode_model(dlt, model, device, lossfunc)
         train_loss_list.append(val_train[0])
         val_loss_list.append(val_val[0])
+
+        #modelを保存
+        if (modelsavedir != None) and (((epoch+1) >= saveepoch) and ((epoch+1)-saveepoch)%saveinterval == 0):
+            os.makedirs(modelsavedir, exist_ok=True)
+            mdpath = osp.join(modelsavedir, "epoch{}.pth".format(epoch + 1))
+            torch.save(model.state_dict(), mdpath)
+
         t2=time.time()
         caltime=(t2-t1)/60
         print(f'エポック{epoch+1}--------------------------------')
@@ -410,7 +419,8 @@ def train_decode_model_mixup(dlt, dlv, model, lossfunc, \
 #Deep Learning(decode)
 def train_decode_model_ver2(dlt, dlv, model, lossfunc, \
     optimizer, epochs, device, scheduler = None, \
-        gausnoise = False, stddev = 0.01):
+        gausnoise = False, stddev = 0.01, \
+            modelsavedir = None, saveepoch = 100, saveinterval = 10):
     """
     transfer displaying learning_curv from this function.
     """
@@ -448,6 +458,13 @@ def train_decode_model_ver2(dlt, dlv, model, lossfunc, \
         val_train = val_decode_model(dlt, model, device, lossfunc)
         train_loss_list.append(val_train[0])
         val_loss_list.append(val_val[0])
+
+        #modelを保存
+        if (modelsavedir != None) and (((epoch+1) >= saveepoch) and ((epoch+1)-saveepoch)%saveinterval == 0):
+            os.makedirs(modelsavedir, exist_ok=True)
+            mdpath = osp.join(modelsavedir, "epoch{}.pth".format(epoch + 1))
+            torch.save(model.state_dict(), mdpath)
+
         t2=time.time()
         caltime=(t2-t1)/60
         print(f'エポック{epoch+1}--------------------------------')
@@ -506,6 +523,7 @@ def test_decode_model_and_check_img_ver3(dataloader, img_width, img_height, mode
                 plt.title('title')
             else :
                 plt.title(label_array[img_num - 1])
+            
             plt.subplot(1,2,1)
             plt.imshow(output_img_array)
             plt.gray()
@@ -513,7 +531,9 @@ def test_decode_model_and_check_img_ver3(dataloader, img_width, img_height, mode
             plt.imshow(origin_img_array)
             plt.gray()
             plt.show()
-            fig.savefig(save_dir_path+ '/' + str(i) +'.jpg')
+            os.makedirs(save_dir_path, exist_ok=True)
+            savepath = osp.join(save_dir_path, "{}.jpg".format(i))
+            fig.savefig(savepath)
 
         img_num += 1
   return psnrs

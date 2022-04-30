@@ -97,7 +97,7 @@ class decoder_outlayersigmoid(nn.Module):
     def forward(self, x):
         x = self.fc1(x)
         x = self.relu(x)
-        x = x.view(-1, 1, self, self.first_height, self.first_width)
+        x = x.view(-1, 1, self.first_height, self.first_width)
         x = self.Deconvs(x)
         return x
 
@@ -120,7 +120,7 @@ class simnet_decoder_allsize(nn.Module):
   def forward(self,x):
     x = self.fc1(x)
     x = self.relu(x)
-    x = x.view(-1,1,self.first_height,self.first_width)
+    x = x.view(-1, 1, self.first_height, self.first_width)
 
     x = self.Deconvs(x)
     return x
