@@ -552,44 +552,6 @@ if __name__=='__main__':
 
 
 
-
-#Displaying learning-curv
-def learning_curv(acc_cf, valloss, valacc, train_cf, trainloss, trainacc, fig_w, fig_h, labelfontsize, scalefontsize):
-  
-  rcparams_dic = {
-    'figure.figsize': (fig_w,fig_h),
-    'axes.labelsize': labelfontsize,
-    'xtick.labelsize': scalefontsize,
-    'ytick.labelsize': scalefontsize,
-  }
-  plt.rcParams.update(rcparams_dic)
-
-
-  if acc_cf == True:
-    plt.subplots_adjust(wspace=0.4, hspace=0.6)
-    plt.subplot(1,2,1)
-  
-  if train_cf == True:
-    plt.plot(range(1, 1 + len(trainloss)), trainloss, label="training")
-  plt.plot(range(1, 1 + len(valloss)), valloss, label="validation")
-  plt.xlabel('Epochs')
-  plt.ylabel('Loss')
-  plt.legend()
-
-  if acc_cf == True:
-    plt.subplot(1,2,2)
-    if train_cf == True:
-      plt.plot(range(1, 1 + len(trainloss)), trainacc, label="training")
-    plt.plot(range(1, 1 + len(trainloss)), valacc, label="validation")
-    plt.xlabel('Epochs')
-    plt.ylabel('Acc')
-    plt.legend()
-
-  plt.show()
-
-
-
-
 #テンソルを分割、標準化、正規化、データセット化
 def split_and_dataset_ver2(data, labels, train_len, norm_true_data, norm_true_label):
   #分割
@@ -775,6 +737,41 @@ def normalize_dataset(dataset, mean_list = None, std_list = None, imaging_cf = F
     del cat_dat_norm
 
     return norm_dataset
+
+
+#Displaying learning-curv
+# def learning_curv(acc_cf, valloss, valacc, train_cf, trainloss, trainacc, fig_w, fig_h, labelfontsize, scalefontsize):
+  
+#   rcparams_dic = {
+#     'figure.figsize': (fig_w,fig_h),
+#     'axes.labelsize': labelfontsize,
+#     'xtick.labelsize': scalefontsize,
+#     'ytick.labelsize': scalefontsize,
+#   }
+#   plt.rcParams.update(rcparams_dic)
+
+
+#   if acc_cf == True:
+#     plt.subplots_adjust(wspace=0.4, hspace=0.6)
+#     plt.subplot(1,2,1)
+  
+#   if train_cf == True:
+#     plt.plot(range(1, 1 + len(trainloss)), trainloss, label="training")
+#   plt.plot(range(1, 1 + len(valloss)), valloss, label="validation")
+#   plt.xlabel('Epochs')
+#   plt.ylabel('Loss')
+#   plt.legend()
+
+#   if acc_cf == True:
+#     plt.subplot(1,2,2)
+#     if train_cf == True:
+#       plt.plot(range(1, 1 + len(trainloss)), trainacc, label="training")
+#     plt.plot(range(1, 1 + len(trainloss)), valacc, label="validation")
+#     plt.xlabel('Epochs')
+#     plt.ylabel('Acc')
+#     plt.legend()
+
+#   plt.show()
 
 
 
