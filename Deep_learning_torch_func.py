@@ -5,7 +5,8 @@ import torch
 import numpy as np
 import torch.nn as nn
 
-
+import os
+import os.path as osp
 
 
 #Data Augumentation
@@ -200,7 +201,8 @@ def val_model(dataloader, model, device, lossfunc, predict_label_list_true):
 #MIXUP
 def train_model_mixup(dlt, dlv, model, lossfunc, optimizer, epochs, device, \
     L1 = False, alpha = None, L2 = False, lamda = None, \
-        mixalpha = 1.0, scheduler = None):
+        mixalpha = 1.0, scheduler = None, \
+          modelsavedir = None, saveepoch = 100, saveinterval = 10):
     t1=time.time()
     train_loss_list = []
     val_loss_list = []
@@ -235,12 +237,20 @@ def train_model_mixup(dlt, dlv, model, lossfunc, optimizer, epochs, device, \
         if(scheduler != None):
             scheduler.step()
 
+        #modelの評価 
         val_val = val_model(dlv, model, device, lossfunc, False)
         val_train = val_model(dlt, model, device, lossfunc, False)
         train_loss_list.append(val_train[1])
         val_loss_list.append(val_val[1])
         train_acc_list.append(val_train[0])
         val_acc_list.append(val_val[0])
+
+        #modelを保存
+        if (modelsavedir != None) and (((epoch+1) == saveepoch) or ((epoch+1)-saveepoch)%saveinterval == 0):
+            os.makedirs(modelsavedir, exist_ok=True)
+            mdpath = osp.join(modelsavedir, "epoch{}.pth".format(epoch + 1))
+            torch.save(model.state_dict(), mdpath)
+        
 
         print(f'エポック{epoch+1}------------------------------')
         print(f'val_acc{val_val[0]:.4f} ,train_acc{val_train[0]:.4f}')
@@ -257,7 +267,8 @@ def train_model_mixup(dlt, dlv, model, lossfunc, optimizer, epochs, device, \
 #Deep Learning(image classification)
 def train_model_ver3(dlt, dlv, model, lossfunc, optimizer, epochs, device, \
     L1 = False, alpha = None, L2 = False, lamda = None, \
-        scheduler = None, gausnoise = False, stddev = 0.01):
+        scheduler = None, gausnoise = False, stddev = 0.01, \
+            modelsavedir = None, saveepoch = 100, saveinterval = 10):
     """
     transfer displaying learning_curv from this function.
     select weight decay option
@@ -310,6 +321,12 @@ def train_model_ver3(dlt, dlv, model, lossfunc, optimizer, epochs, device, \
         val_loss_list.append(val_val[1])
         train_acc_list.append(val_train[0])
         val_acc_list.append(val_val[0])
+
+        #modelを保存
+        if (modelsavedir != None) and (((epoch+1) >= saveepoch) and ((epoch+1)-saveepoch)%saveinterval == 0):
+            os.makedirs(modelsavedir, exist_ok=True)
+            mdpath = osp.join(modelsavedir, "epoch{}.pth".format(epoch + 1))
+            torch.save(model.state_dict(), mdpath)
 
         print(f'エポック{epoch+1}------------------------------')
         print(f'val_acc{val_val[0]:.4f} ,train_acc{val_train[0]:.4f}')
