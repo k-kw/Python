@@ -154,8 +154,7 @@ class Conv1d_Bn_ReLU_Pool(nn.Module):
             nn.Conv1d(inc, outc, ksize),
             nn.BatchNorm1d(outc),
             nn.ReLU(),
-            nn.MaxPool1d(pool)
-        
+            nn.MaxPool1d(pool)      
         )
     def forward(self, x):
         x = self.CNN1d(x)
@@ -173,13 +172,13 @@ class Conv1d_Bn_ReLU(nn.Module):
         x = self.CNN1d(x)
         return x
 
-class Con1d_Bn_LeakyReLU(nn.Module):
-    def __init__(self, inc, outc, ksize):
+class Conv1d_Bn_LeakyReLU(nn.Module):
+    def __init__(self, inc, outc, ksize, ngsl = 0.2):
         super().__init__()
         self.CNN1d = nn.Sequential(
             nn.Conv1d(inc, outc, ksize),
             nn.BatchNorm1d(outc),
-            nn.LeakyReLU(),
+            nn.LeakyReLU(negative_slope = ngsl),
         )
     def forward(self, x):
         x = self.CNN1d(x)
@@ -224,6 +223,51 @@ class cnn1d_sigmoidout(nn.Module):
         x = self.sigmoid(x)
         #BCELoss用
         return x
+
+class cnn1d_notpool_notdrop(nn.Module):
+    def __init__(self, chlist, kslist, classes, linear2in):
+        super().__init__()
+        cnn_layernum = len(chlist)-1
+        cnnlist = []
+        for i in range(cnn_layernum):
+            cnnlist.append(Conv1d_Bn_ReLU(chlist[i], chlist[i+1], kslist[i]))
+        self.CNNS = nn.Sequential(*cnnlist)
+        self.flat = nn.Flatten()
+        self.fc1 = nn.LazyLinear(linear2in)
+        self.fc2 = nn.Linear(linear2in, classes)
+        self.relu = nn.ReLU()
+    def forward(self, x):
+        x = self.CNNS(x)
+        x = self.flat(x)
+        x = self.fc1(x)
+        x = self.relu(x)
+        x = self.fc2(x)
+        #NLLLoss用
+        return F.log_softmax(x, dim = 1)
+
+class cnn1d_LeakyReLU_notpool(nn.Module):
+    def __init__(self, chlist, kslist, classes, drop, linear2in, ngsl = 0.2):
+        super().__init__()
+        cnn_layernum = len(chlist)-1
+        cnnlist = []
+        for i in range(cnn_layernum):
+            cnnlist.append(Conv1d_Bn_LeakyReLU(chlist[i], chlist[i+1], kslist[i], ngsl = ngsl))
+        self.CNNS = nn.Sequential(*cnnlist)
+        self.flat = nn.Flatten()
+        self.fc1 = nn.LazyLinear(linear2in)
+        self.fc2 = nn.Linear(linear2in, classes)
+        self.relu = nn.ReLU()
+        self.drop = nn.Dropout(p = drop)
+    def forward(self, x):
+        x = self.CNNS(x)
+        x = self.flat(x)
+        x = self.drop(x)
+        x = self.fc1(x)
+        x = self.relu(x)
+        x = self.drop(x)
+        x = self.fc2(x)
+        #NLLLoss用
+        return F.log_softmax(x, dim = 1)
 
 class cnn1d_notpool(nn.Module):
     def __init__(self, chlist, kslist, classes, drop, linear2in):
