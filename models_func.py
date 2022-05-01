@@ -132,7 +132,6 @@ class simnet_decoder_allsize(nn.Module):
 #one-dimensional
 
 #submodule
-
 #使ってない
 class Conv1d_Bn_Sigmoid_Pool(nn.Module):
     def __init__(self, inc, outc, ks, pool):
@@ -147,7 +146,6 @@ class Conv1d_Bn_Sigmoid_Pool(nn.Module):
     def forward(self, x):
         x = self.CNN1d(x)
         return x
-
 
 class Conv1d_Bn_ReLU_Pool(nn.Module):
     def __init__(self, inc, outc, ksize, pool):
@@ -170,6 +168,18 @@ class Conv1d_Bn_ReLU(nn.Module):
             nn.Conv1d(inc, outc, ksize),
             nn.BatchNorm1d(outc),
             nn.ReLU(),
+        )
+    def forward(self, x):
+        x = self.CNN1d(x)
+        return x
+
+class Con1d_Bn_LeakyReLU(nn.Module):
+    def __init__(self, inc, outc, ksize):
+        super().__init__()
+        self.CNN1d = nn.Sequential(
+            nn.Conv1d(inc, outc, ksize),
+            nn.BatchNorm1d(outc),
+            nn.LeakyReLU(),
         )
     def forward(self, x):
         x = self.CNN1d(x)
