@@ -40,7 +40,6 @@ class Convtp_Tanh(nn.Module):
         x = self.Deconv(x)
         return x
 
-
 class Convtp_Bn_ReLu(nn.Module):
   def __init__(self,input_channel,output_channel,kernel_size,stride,padding,output_padding):
     super().__init__()
@@ -52,7 +51,6 @@ class Convtp_Bn_ReLu(nn.Module):
   def forward(self,x):
     x = self.Deconv(x)
     return x
-
 
 class Convtp_Bn_Sigmoid(nn.Module):
     def __init__(self, ic, oc, ks, strd, pad, outpad):
@@ -68,9 +66,6 @@ class Convtp_Bn_Sigmoid(nn.Module):
 
 
 #model
-
-
-
 class decoder_outlayersigmoid(nn.Module):
     def __init__(self, input_size, fc1out, firstw, firsth, kslist, strdlist, padlist, opadlist, iclist, oclist):
         super().__init__()
@@ -168,7 +163,17 @@ class Conv1d_Bn_ReLU_Pool(nn.Module):
         x = self.CNN1d(x)
         return x
 
-
+class Conv1d_Bn_ReLU(nn.Module):
+    def __init__(self, inc, outc, ksize):
+        super().__init__()
+        self.CNN1d = nn.Sequential(
+            nn.Conv1d(inc, outc, ksize),
+            nn.BatchNorm1d(outc),
+            nn.ReLU(),
+        )
+    def forward(self, x):
+        x = self.CNN1d(x)
+        return x
 
 #model
 #sigmoid BCEloss用モデル　学習関数に変更必要　保留中
@@ -210,7 +215,53 @@ class cnn1d_sigmoidout(nn.Module):
         #BCELoss用
         return x
 
+class cnn1d_notpool(nn.Module):
+    def __init__(self, chlist, kslist, classes, drop, linear2in):
+        super().__init__()
+        cnn_layernum = len(chlist)-1
+        cnnlist = []
+        for i in range(cnn_layernum):
+            cnnlist.append(Conv1d_Bn_ReLU(chlist[i], chlist[i+1], kslist[i]))
+        self.CNNS = nn.Sequential(*cnnlist)
+        self.flat = nn.Flatten()
+        self.fc1 = nn.LazyLinear(linear2in)
+        self.fc2 = nn.Linear(linear2in, classes)
+        self.relu = nn.ReLU()
+        self.drop = nn.Dropout(p = drop)
+    def forward(self, x):
+        x = self.CNNS(x)
+        x = self.flat(x)
+        x = self.drop(x)
+        x = self.fc1(x)
+        x = self.relu(x)
+        x = self.drop(x)
+        x = self.fc2(x)
+        #NLLLoss用
+        return F.log_softmax(x, dim = 1)
 
+class cnn1d(nn.Module):
+    def __init__(self, chlist, kslist, poollist, classes, drop, linear2in):
+        super().__init__()
+        cnn_layernum = len(chlist)-1
+        cnnlist = []
+        for i in range(cnn_layernum):
+            cnnlist.append(Conv1d_Bn_ReLU_Pool(chlist[i], chlist[i+1], kslist[i], poollist[i]))
+        self.CNNS = nn.Sequential(*cnnlist)
+        self.flat = nn.Flatten()
+        self.fc1 = nn.LazyLinear(linear2in)
+        self.fc2 = nn.Linear(linear2in, classes)
+        self.relu = nn.ReLU()
+        self.drop = nn.Dropout(p = drop)
+    def forward(self, x):
+        x = self.CNNS(x)
+        x = self.flat(x)
+        x = self.drop(x)
+        x = self.fc1(x)
+        x = self.relu(x)
+        x = self.drop(x)
+        x = self.fc2(x)
+        #NLLLoss用
+        return F.log_softmax(x, dim = 1)
 
 class simnet_cnn1d(nn.Module):
     def __init__(self, cnn_layer_num, inc, outc_list, ksize_list, pool_list, classes, drop, linear2_in):

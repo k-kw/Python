@@ -1,4 +1,5 @@
 import torch
+import torchvision.utils as util
 from torchvision.utils import save_image
 from torch.utils.data import Dataset
 import torchvision.transforms as transforms
@@ -201,7 +202,7 @@ class Pix2Pix():
             m.weight.data.normal_(1.0, 0.02)
             m.bias.data.fill_(0)
 
-    def train(self, data, batches_done):
+    def train(self, data, batches_done, epoch, batch_num):
         # ドメインAのラベル画像とドメインBの正解画像を設定
         self.realA = data['A'].to(self.config.device)
         self.realB = data['B'].to(self.config.device)
@@ -286,7 +287,7 @@ class Pix2Pix():
     def save_image(self, epoch):
         # 条件画像、生成画像、正解画像を並べて画像を保存
         output_image = torch.cat([self.realA, self.fakeB, self.realB], dim=3)
-        vutils.save_image(output_image,
+        util.save_image(output_image,
                 '{}/pix2pix_epoch_{}.png'.format(self.config.output_dir, epoch),
                 normalize=True)
 
