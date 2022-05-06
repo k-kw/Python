@@ -96,8 +96,7 @@ class decoder_outlayersigmoid(nn.Module):
         x = self.Deconvs(x)
         return x
 
-
-class simnet_decoder_allsize(nn.Module):
+class decoder_allsize(nn.Module):
   def __init__(self,input_size,fc1_out,first_width,first_height,kernel_size_list,stride_list,padding_list,outpadding_list,in_channel_list,out_channel_list):
     super().__init__()
     self.fc1 = nn.Linear(input_size,fc1_out)
