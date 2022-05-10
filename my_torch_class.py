@@ -2,9 +2,7 @@ import matplotlib.pyplot as plt
 from torch.autograd import Variable
 import time
 import torch
-from torch.utils.data import Dataset, DataLoader
-import numpy as np
-import py_func.my_numpy_class as mnc
+from torch.utils.data import Dataset
 
 #深層学習前の標準化
 def tensor_norm_DL(tensor, mean = None, std = None):
@@ -29,17 +27,20 @@ class My_dataset:
     def __init__(self, numpydata, numpylabel):
         self.data = numpydata
         self.labels = numpylabel
+        self.cftest = False
     
+    #numpyからテンソル
     def numpy2tensor(self):
         self.data = torch.tensor(self.data, dtype = torch.float32)
         self.labels = torch.tensor(self.labels, dtype = torch.float32)
-
+    
+    #numpyからテンソル、ラベルはint64で
     def numpy2tensor_labelint(self):
         self.data = torch.tensor(self.data, dtype = torch.float32)
         self.labels = self.labels.astype(int)
         self.labels = torch.tensor(self.labels, dtype = torch.int64)
 
-    
+    #データを順番は変えずに分割
     def splitdata(self, lentrain, lenval = None):
         if lenval == None:
             #訓練データと評価データに分割
@@ -54,26 +55,36 @@ class My_dataset:
                 self.data[lentrain:lentrain + lenval], self.data[lentrain + lenval:]
             self.label_t, self.label_v, self.label_test = self.labels[:lentrain], \
                 self.labels[lentrain:lentrain + lenval], self.labels[lentrain + lenval:]
-
-
-
+    
+    #データセットを訓練データの平均と標準偏差で標準化
     def datanormalize(self):
         self.data_t, self.mean, self.std = tensor_norm_DL(self.data_t)
         self.data_v, _, _ = tensor_norm_DL(self.data_v, self.mean, self.std)
         if self.cftest:
             self.data_test, _, _ = tensor_norm_DL(self.data_test, self.mean, self.std)
-
+    
+    #ラベルが正解画像の時、ラベルをmaxmin正規化
     def labelnormalize(self):
         self.label_t, max, min = tensor_norm(self.label_t)
         self.label_v, _, _ = tensor_norm(self.label_v, max, min)
         if self.cftest:
             self.label_test, _, _ = tensor_norm(self.label_test, max, min)
-            
+    
+    #テンソルからデータセットに
     def tensor2dataset(self):
         self.dataset_train = torch.utils.data.TensorDataset(self.data_t, self.label_t)
         self.dataset_val = torch.utils.data.TensorDataset(self.data_v, self.label_v)
         if self.cftest:
             self.dataset_test = torch.utils.data.TensorDataset(self.data_test, self.label_test)
+
+    #1つのデータセットをランダムに訓練、評価、テストデータに分割
+    def tensor2dataset_randomsplit(self, lentrain, lenval=None):
+        if lenval != None:
+            self.cftest=True
+        orgdataset=torch.utils.data.
+        if self.cftest:
+
+
             
 
 def channeltensor_mean_std(tensors):
