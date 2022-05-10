@@ -77,12 +77,14 @@ class My_dataset:
         if self.cftest:
             self.dataset_test = torch.utils.data.TensorDataset(self.data_test, self.label_test)
 
-    #1つのデータセットをランダムに訓練、評価、テストデータに分割
-    def tensor2dataset_randomsplit(self, lentrain, lenval=None):
-        if lenval != None:
-            self.cftest=True
-        orgdataset=torch.utils.data.
-        if self.cftest:
+    # #1つのデータセットをランダムに訓練、評価、テストデータに分割
+    # def tensor2dataset_randomsplit(self, lentrain, lenval=None):
+    #     if lenval != None:
+    #         self.cftest=True
+        
+    #     #tensorの状態でdataとラベルを結合して一つのラベルに
+    #     self.data_label = 
+    #     if self.cftest:
 
 
             
