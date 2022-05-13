@@ -3,6 +3,7 @@ from torch.autograd import Variable
 import time
 import torch
 from torch.utils.data import Dataset
+import numpy as np
 
 #深層学習前の標準化
 def tensor_norm_DL(tensor, mean = None, std = None):
@@ -28,6 +29,7 @@ class My_dataset:
         self.data = numpydata
         self.labels = numpylabel
         self.cftest = False
+        self.length = numpydata.shape[0]
     
     #numpyからテンソル
     def numpy2tensor(self):
@@ -77,16 +79,48 @@ class My_dataset:
         if self.cftest:
             self.dataset_test = torch.utils.data.TensorDataset(self.data_test, self.label_test)
 
-    # #1つのデータセットをランダムに訓練、評価、テストデータに分割
-    # def tensor2dataset_randomsplit(self, lentrain, lenval=None):
-    #     if lenval != None:
-    #         self.cftest=True
+
+
+
+    #---------------------ランダムに訓練、評価、テストに分ける場合---------------------------------
+
+    def tensor_shuffle_split(self, shflidsavepath, trainlen, vallen, shuffleindex=None):
+        if shuffleindex==None:
+            #shuffleされたindexを受け取っていないときはここで作ってpathに保存
+            index = torch.randperm(self.length)
+            index = index.to('cpu').detach().numpy().copy()
+            np.save(arr=index, file = shflidsavepath)
+        else:
+            index=shuffleindex
         
-    #     #tensorの状態でdataとラベルを結合して一つのラベルに
-    #     self.data_label = 
-    #     if self.cftest:
+        datatrain=[]
+        labeltrain=[]
+        dataval=[]
+        labelval=[]
+        datatest=[]
+        labeltest=[]
 
-
+        cnt=0
+        for ind in index:
+            cnt+=1
+            if(cnt<=trainlen):
+                datatrain.append(self.data[ind])
+                labeltrain.append(self.labels[ind])
+            elif(cnt<=trainlen+vallen):
+                dataval.append(self.data[ind])
+                labelval.append(self.labels[ind])
+            else:
+                datatest.append(self.data[ind])
+                labeltest.append(self.labels[ind])
+        
+        self.data_t = torch.stack(datatrain, dim=0)
+        self.data_val = torch.stack(dataval, dim=0)
+        self.data_test = torch.stack(datatest, dim=0)
+        
+        self.lebel_t = torch.stack(labeltrain, dim=0)
+        self.label_val = torch.stack(labelval, dim=0)
+        self.label_test = torch.stack(labeltest, dim=0)
+            
             
 
 def channeltensor_mean_std(tensors):
