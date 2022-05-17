@@ -68,8 +68,8 @@ class My_dataset:
 
     #---------------------ランダムに訓練、検証、テストに分ける場合---------------------------------
 
-    def tensor_shuffle_split(self, shflidsavepath, trainlen, vallen, shuffleindex=None):
-        if shuffleindex==None:
+    def tensor_shuffle_split(self, trainlen, vallen, shflidsavepath=None, shuffleindex=None):
+        if type(shuffleindex)!=np.ndarray and shflidsavepath!=None:
             #shuffleされたindexを受け取っていないときはここで作ってpathに保存
             index = torch.randperm(self.length)
             index = index.to('cpu').detach().numpy().copy()
@@ -77,9 +77,15 @@ class My_dataset:
             dir, _ = os.path.split(shflidsavepath)
             os.makedirs(dir, exist_ok=True)
             np.save(arr = index, file = shflidsavepath)
-        else:
+
+        elif type(shuffleindex)==np.ndarray and shflidsavepath==None:
             #shuffleされたindexを受け取った場合はそれを使う
             index=shuffleindex
+
+        elif type(shuffleindex)==np.ndarray and shflidsavepath!=None:
+            print("shflidsavepathかshuffleindexはどちらか一方です")
+        else:
+            print("shflidsavepathかshuffleindexはどちらか一方を指定しなければなりません")
         
         datatrain=[]
         labeltrain=[]
