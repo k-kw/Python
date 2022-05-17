@@ -42,7 +42,10 @@ class My_dataset:
         self.labels = self.labels.astype(int)
         self.labels = torch.tensor(self.labels, dtype = torch.int64)
 
-    #データを順番は変えずに分割
+
+
+
+    #-------------------データを順番は変えずに分割-------------------
     def splitdata(self, lentrain, lenval = None):
         if lenval == None:
             #訓練データと評価データに分割
@@ -58,6 +61,54 @@ class My_dataset:
             self.label_t, self.label_v, self.label_test = self.labels[:lentrain], \
                 self.labels[lentrain:lentrain + lenval], self.labels[lentrain + lenval:]
     
+    
+
+
+
+    #---------------------ランダムに訓練、評価、テストに分ける場合---------------------------------
+
+    def tensor_shuffle_split(self, shflidsavepath, trainlen, vallen, shuffleindex=None):
+        if shuffleindex==None:
+            #shuffleされたindexを受け取っていないときはここで作ってpathに保存
+            index = torch.randperm(self.length)
+            index = index.to('cpu').detach().numpy().copy()
+            np.save(arr = index, file = shflidsavepath)
+        else:
+            index=shuffleindex
+        
+        datatrain=[]
+        labeltrain=[]
+        dataval=[]
+        labelval=[]
+        datatest=[]
+        labeltest=[]
+
+
+        for cnt, ind in enumerate(index):
+            if(cnt+1<=trainlen):
+                datatrain.append(self.data[ind])
+                labeltrain.append(self.labels[ind])
+            elif(cnt+1<=trainlen+vallen):
+                dataval.append(self.data[ind])
+                labelval.append(self.labels[ind])
+            else:
+                datatest.append(self.data[ind])
+                labeltest.append(self.labels[ind])
+        
+        self.data_t = torch.stack(datatrain, dim=0)
+        self.data_val = torch.stack(dataval, dim=0)
+        self.data_test = torch.stack(datatest, dim=0)
+        
+        self.lebel_t = torch.stack(labeltrain, dim=0)
+        self.label_val = torch.stack(labelval, dim=0)
+        self.label_test = torch.stack(labeltest, dim=0)
+    
+
+
+
+
+
+
     #データセットを訓練データの平均と標準偏差で標準化
     def datanormalize(self):
         self.data_t, self.mean, self.std = tensor_norm_DL(self.data_t)
@@ -82,46 +133,7 @@ class My_dataset:
 
 
 
-    #---------------------ランダムに訓練、評価、テストに分ける場合---------------------------------
 
-    def tensor_shuffle_split(self, shflidsavepath, trainlen, vallen, shuffleindex=None):
-        if shuffleindex==None:
-            #shuffleされたindexを受け取っていないときはここで作ってpathに保存
-            index = torch.randperm(self.length)
-            index = index.to('cpu').detach().numpy().copy()
-            np.save(arr=index, file = shflidsavepath)
-        else:
-            index=shuffleindex
-        
-        datatrain=[]
-        labeltrain=[]
-        dataval=[]
-        labelval=[]
-        datatest=[]
-        labeltest=[]
-
-        cnt=0
-        for ind in index:
-            cnt+=1
-            if(cnt<=trainlen):
-                datatrain.append(self.data[ind])
-                labeltrain.append(self.labels[ind])
-            elif(cnt<=trainlen+vallen):
-                dataval.append(self.data[ind])
-                labelval.append(self.labels[ind])
-            else:
-                datatest.append(self.data[ind])
-                labeltest.append(self.labels[ind])
-        
-        self.data_t = torch.stack(datatrain, dim=0)
-        self.data_val = torch.stack(dataval, dim=0)
-        self.data_test = torch.stack(datatest, dim=0)
-        
-        self.lebel_t = torch.stack(labeltrain, dim=0)
-        self.label_val = torch.stack(labelval, dim=0)
-        self.label_test = torch.stack(labeltest, dim=0)
-            
-            
 
 def channeltensor_mean_std(tensors):
     """
