@@ -4,6 +4,7 @@ import time
 import torch
 from torch.utils.data import Dataset
 import numpy as np
+import os
 
 #深層学習前の標準化
 def tensor_norm_DL(tensor, mean = None, std = None):
@@ -48,13 +49,13 @@ class My_dataset:
     #-------------------データを順番は変えずに分割-------------------
     def splitdata(self, lentrain, lenval = None):
         if lenval == None:
-            #訓練データと評価データに分割
+            #訓練データと検証データに分割
             self.data_t, self.data_v = self.data[:lentrain], \
                 self.data[lentrain:]
             self.label_t, self.label_v = self.labels[:lentrain], \
                 self.labels[lentrain:]
         else:
-            #訓練、評価、テストに分割
+            #訓練、検証、テストに分割
             self.cftest = True
             self.data_t, self.data_v, self.data_test = self.data[:lentrain], \
                 self.data[lentrain:lentrain + lenval], self.data[lentrain + lenval:]
@@ -65,15 +66,19 @@ class My_dataset:
 
 
 
-    #---------------------ランダムに訓練、評価、テストに分ける場合---------------------------------
+    #---------------------ランダムに訓練、検証、テストに分ける場合---------------------------------
 
     def tensor_shuffle_split(self, shflidsavepath, trainlen, vallen, shuffleindex=None):
         if shuffleindex==None:
             #shuffleされたindexを受け取っていないときはここで作ってpathに保存
             index = torch.randperm(self.length)
             index = index.to('cpu').detach().numpy().copy()
+
+            dir, _ = os.path.split(shflidsavepath)
+            os.makedirs(dir, exist_ok=True)
             np.save(arr = index, file = shflidsavepath)
         else:
+            #shuffleされたindexを受け取った場合はそれを使う
             index=shuffleindex
         
         datatrain=[]
@@ -96,13 +101,13 @@ class My_dataset:
                 labeltest.append(self.labels[ind])
         
         self.data_t = torch.stack(datatrain, dim=0)
-        self.data_val = torch.stack(dataval, dim=0)
+        self.data_v = torch.stack(dataval, dim=0)
         self.data_test = torch.stack(datatest, dim=0)
         
-        self.lebel_t = torch.stack(labeltrain, dim=0)
-        self.label_val = torch.stack(labelval, dim=0)
+        self.label_t = torch.stack(labeltrain, dim=0)
+        self.label_v = torch.stack(labelval, dim=0)
         self.label_test = torch.stack(labeltest, dim=0)
-    
+        self.cftest = True
 
 
 
