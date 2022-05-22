@@ -281,6 +281,9 @@ class DiscriminatorESR(nn.Module):
 
 
 
+
+
+
 #######-----------GAN,CGAN,LSGAN------------#########
 
 class Generator(nn.Module):
