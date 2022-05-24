@@ -497,9 +497,14 @@ def test_decode_model_and_check_img_ver3(dataloader, img_width, img_height, mode
   """
   import numpy as np
   import cv2
+  #評価モード
   model.eval()
   img_num = 1
+  #PSNR配列
   psnrs = []
+  #SSIM配列
+  ssims = []
+
   with torch.no_grad():
     for inputs, origin in dataloader:
       inputs, origin = inputs.to(device), origin.to(device)
@@ -512,8 +517,13 @@ def test_decode_model_and_check_img_ver3(dataloader, img_width, img_height, mode
         origin_img_array = tensor_to_numpy(origin[i], correctimgnorm)
         origin_img_array = np.resize(origin_img_array,(img_height,img_width))
 
+        #PSNR算出
         psnr = cv2.PSNR(output_img_array, origin_img_array)
         psnrs.append(psnr)
+
+        #SSIM算出
+        ssim = cv2.quality.QualitySSIM_compute(output_img_array, origin_img_array)
+        ssims.append(ssim)
 
         if from_num <= img_num and img_num <= to_num:
             plt.rcParams["figure.figsize"] = (figwidth, figheighgt)
@@ -536,7 +546,7 @@ def test_decode_model_and_check_img_ver3(dataloader, img_width, img_height, mode
             fig.savefig(savepath)
 
         img_num += 1
-  return psnrs
+  return psnrs, ssims
 
 
 
