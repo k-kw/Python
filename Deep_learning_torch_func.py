@@ -8,6 +8,8 @@ import torch.nn as nn
 import os
 import os.path as osp
 
+#SSIM
+from skimage.metrics import structural_similarity as ssim
 
 #Data Augumentation
 
@@ -522,8 +524,8 @@ def test_decode_model_and_check_img_ver3(dataloader, img_width, img_height, mode
         psnrs.append(psnr)
 
         #SSIM算出
-        ssim = cv2.quality.QualitySSIM_compute(output_img_array, origin_img_array)
-        ssims.append(ssim)
+        ssimvalue = ssim(output_img_array, origin_img_array)
+        ssims.append(ssimvalue)
 
         if from_num <= img_num and img_num <= to_num:
             plt.rcParams["figure.figsize"] = (figwidth, figheighgt)
