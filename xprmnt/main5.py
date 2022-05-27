@@ -12,16 +12,17 @@ import numpy as np
 img_dir_path = "kwmt/mnist"
 
 #取得開始画像は何枚目？
-start = 1
+start = 65001
 
 #取得画像枚数
-img_num = 3
+img_num = 5000
 
 #画像表示間隔[ms]
-sleeptime = 500
+sleeptime = 600
 
 #データセットパス
-dataset_path = "kwmt/m_1_1000_fps2_N10_lsd.dat"
+dataset_path = "kwmt/expem_now/m_65001_70000_slt0.6_N3_lsd.dat"
+#データセット一枚に対して、N＊rowだけデータをとる
 
 getwidth = 1600
 getheight = 1200
@@ -31,14 +32,19 @@ camera_num = 0
 write_row = 600
 
 midrow = 600
-writerow_width = 10
+#writerow_widthは偶数
+writerow_width = 4
 
 
 miss_data = 0
 byte = 1
 
 #N回だけ同じ画像からデータ取得
-N = 10
+N = 3
+
+
+screenwidth = 4096
+screenheight = 2400
 
 #真ん中の複数列を取得
 def frame_multiline_wb(frame, midrow, writerow_width, f, byte):
@@ -48,8 +54,8 @@ def frame_multiline_wb(frame, midrow, writerow_width, f, byte):
     #グレースケール化
     frame = cv2.cvtColor(frame, COLOR_BGR2GRAY)
 
-    startrow_num = midrow - (writerow_width/2)
-    write_rows = frame[[range(startrow_num, startrow_num + writerow_width)], :]
+    startrow_num = int(midrow - (writerow_width/2))
+    write_rows = frame[range(startrow_num, startrow_num + writerow_width), :]
 
     
     for writedata in write_rows:
@@ -66,8 +72,8 @@ def frame_multi_mean_wb(frame, midrow, writerow_width, f, byte):
     frame = cv2.cvtColor(frame, COLOR_BGR2GRAY)
 
     #書き込む行を取り出す
-    startrow_num = midrow - (writerow_width/2)
-    write_rows = frame[[range(startrow_num, startrow_num + writerow_width)], :]
+    startrow_num = int(midrow - (writerow_width/2))
+    write_rows = frame[range(startrow_num, startrow_num + writerow_width), :]
 
     
     #列平均
@@ -143,7 +149,7 @@ if cap.isOpened():
         img = cv2.imread(img_dir_path + '/' + filename_sorted, cv2.IMREAD_GRAYSCALE)
 
         #resize(dsize = (width, height))
-        img = cv2.resize(img, dsize = (4094, 2400))
+        img = cv2.resize(img, dsize = (screenwidth, screenheight))
         cv2.imshow("view", img)
         
         cv2.waitKey(int(sleeptime / 2))
@@ -155,18 +161,18 @@ if cap.isOpened():
             #frame.shape == h,w,3
             if ret == False:
                 print(f'{i + 1}枚目 : 取得失敗')
-                # #miss_dataをmiss_size回書き込み
-                # data_int_wb(miss_data, getwidth, f, byte)
+                #miss_dataをmiss_size回書き込み
+                data_int_wb(miss_data, getwidth, f, byte)
 
-                #miss_dataをget_with*writerow_width回書き込み
-                data_int_wb(miss_data, getwidth * writerow_width, f, byte)
+                # #miss_dataをget_with*writerow_width回書き込み
+                # data_int_wb(miss_data, getwidth * writerow_width, f, byte)
 
             else:
-                # #一行書き込み
-                # frame_line_wb(frame, write_row, f, byte)
+                #一行書き込み
+                frame_line_wb(frame, write_row, f, byte)
                 
-                #複数行書き込み
-                frame_multiline_wb(frame, midrow, writerow_width, f, byte)
+                # #複数行書き込み
+                # frame_multiline_wb(frame, midrow, writerow_width, f, byte)
 
                 # #複数行平均して書き込み
                 # frame_multi_mean_wb(frame, midrow, writerow_width, f, byte)
