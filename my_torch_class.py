@@ -116,6 +116,17 @@ class My_dataset:
         self.cftest = True
 
 
+class My_dataset2:
+    def __init__(self, alllength):
+        self.alllength = alllength #全データセットの数
+    
+    def make_shuffleindex(self):
+        self.allindex = torch.randperm(self.alllength)
+        return self.allindex
+    
+    def numpy2tensor(self, npdata, nplabels):
+        self.data = torch.tensor(npdata, dtype = torch.float32)
+
 
 
 
