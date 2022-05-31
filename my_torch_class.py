@@ -116,19 +116,6 @@ class My_dataset:
         self.cftest = True
 
 
-class My_dataset2:
-    def __init__(self, alllength):
-        self.alllength = alllength #全データセットの数
-    
-    def make_shuffleindex(self):
-        self.allindex = torch.randperm(self.alllength)
-        return self.allindex
-    
-    def numpy2tensor(self, npdata, nplabels):
-        self.data = torch.tensor(npdata, dtype = torch.float32)
-
-
-
 
 
     #データセットを訓練データの平均と標準偏差で標準化
@@ -153,7 +140,101 @@ class My_dataset2:
             self.dataset_test = torch.utils.data.TensorDataset(self.data_test, self.label_test)
 
 
+#
+class My_dataset2:
+    def __init__(self, numpydata, numpylabel):
+        #訓練、評価、検証に分割前の全データ
+        self.data = numpydata
+        self.labels = numpylabel
+        self.length = numpydata.shape[0]
+    
+    
+    def make_shuffleindex(self):
+        self.allindex = torch.randperm(self.length)
+        return self.allindex
+    
+    #numpyからテンソル
+    def numpy2tensor(self):
+        self.data = torch.tensor(self.data, dtype = torch.float32)
+        self.labels = torch.tensor(self.labels, dtype = torch.float32)
+    
+    #numpyからテンソル、ラベルはint64で
+    def numpy2tensor_labelint(self):
+        self.data = torch.tensor(self.data, dtype = torch.float32)
+        self.labels = self.labels.astype(int)
+        self.labels = torch.tensor(self.labels, dtype = torch.int64)
 
+    
+    #以下はテンソルになっていること前提
+    #-------------------データを順番は変えずに分割-------------------
+    def splitdata(self, lentrain, lenval = 0, lentest=0):
+        if(lentrain+lenval+lentest!=self.length):
+            print("indexが無効です.\n")
+
+        train=self.data[:lentrain]
+        val=self.data[lentrain:lenval]
+        test=self.data[lenval:lentest]
+        
+        trainlabel=self.data[:lentrain]
+        vallabel=self.data[lentrain:lenval]
+        testlabel=self.data[lenval:lentest]
+
+        trainlist=[train, trainlabel]
+        vallist=[val, vallabel]
+        testlist=[test, testlabel]
+
+        return trainlist, vallist, testlist
+    
+    #受け取ったインデックスに従い、self.data labelsから取り出す
+    def index_splitdata(self, index):
+        datalist=[]
+        labellist=[]
+        for id in index:
+            datalist.append(self.data[id])
+            labellist.append(self.labels[id])
+
+        data = torch.stack(datalist, dim=0)
+        label = torch.stack(labellist, dim=0)
+        return data, label
+
+    #訓練、検証、評価データを内部変数にセット
+    def set3data(self, train, val=None, test=None):
+        self.data_train=train
+        self.data_val=val
+        self.data_test=test
+
+    #訓練、検証、評価ラベルを内部変数にセット
+    def set3label(self, train, val=None, test=None):
+        self.label_train=train
+        self.label_val=val
+        self.label_test=test
+
+
+
+    #データセットを訓練データの平均と標準偏差で標準化
+    def datanormalize(self):
+        self.data_train, self.mean, self.std = tensor_norm_DL(self.data_train)
+        if(self.data_val!=None):
+            self.data_val, _, _ = tensor_norm_DL(self.data_val, self.mean, self.std)
+        if(self.data_test!=None):
+            self.data_test, _, _ = tensor_norm_DL(self.data_test, self.mean, self.std)
+        
+    #ラベルが正解画像の時、ラベルをmaxmin正規化
+    def labelnormalize(self):
+        self.label_train, max, min = tensor_norm(self.label_train)
+        if (self.label_val!=None):
+            self.label_val, _, _ = tensor_norm(self.label_val, max, min)
+        if (self.label_test!=None):
+            self.label_test, _, _ = tensor_norm(self.label_test, max, min)
+        
+    #テンソルからデータセットに
+    def tensor2dataset(self):
+        self.dataset_train = torch.utils.data.TensorDataset(self.data_train, self.label_train)
+        if(self.data_val!=None and self.label_val!=None):
+            self.dataset_val = torch.utils.data.TensorDataset(self.data_val, self.label_val)
+        if(self.data_test!=None and self.label_test!=None):
+            self.dataset_test = torch.utils.data.TensorDataset(self.data_test, self.label_test)
+        
 
 
 
