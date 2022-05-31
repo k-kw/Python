@@ -140,7 +140,7 @@ class My_dataset:
             self.dataset_test = torch.utils.data.TensorDataset(self.data_test, self.label_test)
 
 
-#
+#新しいデータセットクラス
 class My_dataset2:
     def __init__(self, numpydata, numpylabel):
         #訓練、評価、検証に分割前の全データ
@@ -148,7 +148,7 @@ class My_dataset2:
         self.labels = numpylabel
         self.length = numpydata.shape[0]
     
-    
+    #ランダムにシャッフルされたインデックスを返す
     def make_shuffleindex(self):
         self.allindex = torch.randperm(self.length)
         return self.allindex
