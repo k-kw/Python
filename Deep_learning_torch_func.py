@@ -8,6 +8,9 @@ import torch.nn as nn
 import os
 import os.path as osp
 
+#listの平均
+import statistics
+
 #SSIM
 from skimage.metrics import structural_similarity as ssim
 
@@ -201,17 +204,26 @@ def val_model(dataloader, model, device, lossfunc, predict_label_list_true):
 
 #Deep Learning(image classification)
 #MIXUP
-def train_model_mixup(dlt, dlv, model, lossfunc, optimizer, epochs, device, \
-    L1 = False, alpha = None, L2 = False, lamda = None, \
-        mixalpha = 1.0, scheduler = None, \
-          modelsavedir = None, saveepoch = 100, saveinterval = 10):
+def train_model_mixup(dlt, dlv, model, lossfunc, optimizer, maxepochs, device, 
+    mean_or_improve = None, decision_num = 10, decision_mean = None, #学習終了条件, 
+    #meanのとき最後からdicision_numまでの平均lossがdecision_meanを下回ったら終了, improveのときdecision_numだけ改善がなければ終了
+    L1 = False, alpha = None, L2 = False, lamda = None, #正則化
+    mixalpha = 1.0, #MIXUP alpha
+    scheduler = None, #学習率スケジューラ
+    modelsavedir = None, saveepoch = 100, saveinterval = 10 #モデル保存、ディレクトリ、エポック
+    ):
+
+
     t1=time.time()
     train_loss_list = []
     val_loss_list = []
     train_acc_list = []
     val_acc_list = []
 
-    for epoch in range(epochs):
+    if(mean_or_improve=="improve"):
+        improve_cnt=0
+
+    for epoch in range(maxepochs):
         model.train()
         for dat_train in dlt:
             inputs, labels = dat_train
@@ -260,6 +272,21 @@ def train_model_mixup(dlt, dlv, model, lossfunc, optimizer, epochs, device, \
         caltime=(t2-t1)/60
         print(f'epochtime:{caltime:.4f}分')
         t1=time.time()
+
+        #終了判定
+        #平均を指定した場合
+        if(mean_or_improve=="mean"):
+            lastloss = val_loss_list[(-1*decision_num):]
+            if(statistics.mean(lastloss)<=decision_mean):
+                print(f'{mean_or_improve}により,{epoch+1}で終了しました．\n')
+                break
+        #改善を指定した場合
+        elif(mean_or_improve=="improve"):
+            if(val_loss_list[-1]>=val_loss_list[-2]):
+                improve_cnt+=1
+            if(improve_cnt>=decision_num):
+                print(f'{mean_or_improve}により,{epoch+1}で終了しました．\n')
+                break
 
     return train_loss_list, val_loss_list, train_acc_list, val_acc_list
 
