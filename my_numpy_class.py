@@ -2,6 +2,8 @@ import numpy as np
 import gc
 import matplotlib.pyplot as plt
 import cv2
+import os.path as osp
+import os
 
 def dataread(data_path, byte, num):
   data_list = []
@@ -62,8 +64,9 @@ class My_numpy:
             plt.title(labels[i])
             fig.savefig(save_dir_path+ '/' + str(i) +'.jpg')
 
-    def save_simwave(self, save_start_num, save_num, labels, dis_width, dis_height, fontsize, save_dir_path):
-        
+    def save_simwave(self, save_start_num, save_num, labels, dis_width, dis_height, fontsize, save_dir_path, linewid):
+
+        os.makedirs(save_dir_path, exist_ok=True)        
         for i in range(save_start_num - 1, save_start_num - 1 + save_num):
             plt.rcParams["figure.figsize"] = (dis_width, dis_height)
             plt.rcParams["font.size"] = fontsize
@@ -71,11 +74,12 @@ class My_numpy:
             plt.rcParams["figure.subplot.bottom"] = 0.15
             fig = plt.figure()
 
-            plt.plot(range(0, self.sizex), self.data[i], linewidth=1)
+            plt.plot(range(0, self.data.shape[1]), self.data[i], linewidth=linewid)
             plt.xlabel("row-position")
             plt.ylabel("pixel value")
             plt.title(labels[i])
-            fig.savefig(save_dir_path+ '/' + str(i) +'.jpg')
+            fig.savefig(osp.join(save_dir_path, str(i)+".jpg"))
+            #fig.savefig(save_dir_path+ '/' + str(i) +'.jpg')
 
     
     def data_to_grayjpg(self, save_num, save_dir_path):
