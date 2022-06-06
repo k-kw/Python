@@ -161,12 +161,13 @@ def endmean(val_loss_list, decision_num, decision_mean, disp_epoch):
     lastloss=val_loss_list[(-1*decision_num):]
 
     if(statistics.mean(lastloss)<=decision_mean):
-        print(f'指定した損失値を,decision_num番目以降の平均が下回ったので,{disp_epoch}で終了しました．\n')
+        print(f'指定した損失値を,decision_num番目以降の平均が下回ったので,エポック{disp_epoch}で終了しました．\n')
         endflg=True
     else:
         endflg=False
     return endflg
 
+#not debug
 #decision_numだけ改善が見られなければ終了
 def endimprove(val_loss_list, decision_num, notimpv_cnt, disp_epoch):
     #前回に比べ改善していない場合,count up
@@ -176,7 +177,7 @@ def endimprove(val_loss_list, decision_num, notimpv_cnt, disp_epoch):
     else:
         notimpv_cnt=0
     if(notimpv_cnt>=decision_num):
-        print(f'指定回数だけ連続して改善が見られなかったため{disp_epoch}で終了しました．\n')
+        print(f'指定回数だけ連続して改善が見られなかったため,エポック{disp_epoch}で終了しました．\n')
         endflg=True
     else:
         endflg=False
