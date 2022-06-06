@@ -155,10 +155,37 @@ def L2norm(model, lamda, loss):
 
 
 
+#学習終了判定(Early stopping)
+#最後からdeciosion_num番目までの平均損失値が、decision_meanを下回ると終了させる
+def endmean(val_loss_list, decision_num, decision_mean, disp_epoch):
+    lastloss=val_loss_list[(-1*decision_num):]
+
+    if(statistics.mean(lastloss)<=decision_mean):
+        print(f'指定した損失値を,decision_num番目以降の平均が下回ったので,{disp_epoch}で終了しました．\n')
+        endflg=True
+    else:
+        endflg=False
+    return endflg
+
+#decision_numだけ改善が見られなければ終了
+def endimprove(val_loss_list, decision_num, notimpv_cnt, disp_epoch):
+    #前回に比べ改善していない場合,count up
+    if(val_loss_list[-1]>=val_loss_list[-2]):
+        notimpv_cnt+=1
+    #改善されている場合,0
+    else:
+        notimpv_cnt=0
+    if(notimpv_cnt>=decision_num):
+        print(f'指定回数だけ連続して改善が見られなかったため{disp_epoch}で終了しました．\n')
+        endflg=True
+    else:
+        endflg=False
+    return notimpv_cnt, endflg
 
 
 
 
+#評価・訓練関数
 #Deep Learning validation(image classification)
 def val_model(dataloader, model, device, lossfunc, predict_label_list_true):
     model.eval()
@@ -221,7 +248,7 @@ def train_model_mixup(dlt, dlv, model, lossfunc, optimizer, maxepochs, device,
     val_acc_list = []
 
     if(mean_or_improve=="improve"):
-        improve_cnt=0
+        notimpv_cnt=0
 
     for epoch in range(maxepochs):
         model.train()
@@ -276,17 +303,15 @@ def train_model_mixup(dlt, dlv, model, lossfunc, optimizer, maxepochs, device,
         #終了判定
         #平均を指定した場合
         if(mean_or_improve=="mean"):
-            lastloss = val_loss_list[(-1*decision_num):]
-            if(statistics.mean(lastloss)<=decision_mean):
-                print(f'{mean_or_improve}により,{epoch+1}で終了しました．\n')
+            endflg = endmean(val_loss_list, decision_num, decision_mean, epoch+1)
+            if(endflg):
                 break
+            
         #改善を指定した場合
         elif(mean_or_improve=="improve"):
-            if(val_loss_list[-1]>=val_loss_list[-2]):
-                improve_cnt+=1
-            if(improve_cnt>=decision_num):
-                print(f'{mean_or_improve}により,{epoch+1}で終了しました．\n')
-                break
+            notimpv_cnt, endflg = endimprove(val_acc_list, decision_num, notimpv_cnt, epoch+1)
+            if(endflg):
+                break           
 
     return train_loss_list, val_loss_list, train_acc_list, val_acc_list
 

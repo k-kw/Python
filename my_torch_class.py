@@ -140,6 +140,9 @@ class My_dataset:
             self.dataset_test = torch.utils.data.TensorDataset(self.data_test, self.label_test)
 
 
+
+
+
 #新しいデータセットクラス
 class My_dataset2:
     def __init__(self, numpydata, numpylabel):
