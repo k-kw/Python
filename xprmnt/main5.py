@@ -6,22 +6,27 @@ import re
 import os
 from cv2 import COLOR_BGR2GRAY
 import numpy as np
-
+import time
+t1=time.time()
 
 #画像ディレクトリ
-img_dir_path = "kwmt/mnist"
+# mnist
+img_dir_path = "mnist"
+# fashion-mnist
+#img_dir_path = "fashionmnist"
+
 
 #取得開始画像は何枚目？
-start = 65001
+start = 1
 
 #取得画像枚数
-img_num = 5000
+img_num = 1
 
 #画像表示間隔[ms]
-sleeptime = 600
+sleeptime = 60000
 
 #データセットパス
-dataset_path = "kwmt/expem_now/m_65001_70000_slt0.6_N3_lsd.dat"
+dataset_path = "expefm_now/none.dat"
 #データセット一枚に対して、N＊rowだけデータをとる
 
 getwidth = 1600
@@ -152,7 +157,7 @@ if cap.isOpened():
         img = cv2.resize(img, dsize = (screenwidth, screenheight))
         cv2.imshow("view", img)
         
-        cv2.waitKey(int(sleeptime / 2))
+        cv2.waitKey(int(sleeptime))
 
         #同じ画像に対してN枚画像取得枚
         for i in range(N):
@@ -178,7 +183,7 @@ if cap.isOpened():
                 # frame_multi_mean_wb(frame, midrow, writerow_width, f, byte)
 
 
-        cv2.waitKey(int(sleeptime / 2))
+        #cv2.waitKey(int(sleeptime / 2))
         
 
         
@@ -191,3 +196,7 @@ else:
     print("camera do not open")
 
 cap.release()
+
+t2=time.time()
+
+print((t2-t1)/60)
